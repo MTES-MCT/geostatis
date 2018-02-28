@@ -1,28 +1,47 @@
-/*-----------------------------Variables globales-----------------------------*/
+/*-------------------------------Variables------------------------------------*/
 
-
-//var mapid = L.map('mapid').setView([46.6033540, 1.8883335], 5); // Carte
-// Set bounds to France
+/*Limites maximales de la France métropolitaine*/
   var bounds = [
-    [40.332899,-5.066836], // Southwest coordinates
-    [51.340579,10.110196]  // Northeast coordinates
+    [41.340624,-4.936423], // Southwest coordinates
+    [51.248691, 9.651224]  // Northeast coordinates
   ];
-  // initialize the map on the "map" div with a given center and zoom
+
+  /*
+  Initialisation de la carte en centrant au centre de la France
+  Zoom est de 5, 5 est le niveau de zoom minimal
+  Il est possible de zoomer avec un pas de 0.25
+  On ne peut pas sortir de la France avec maxBounds
+  */
   var mapid = L.map('mapid', {
       center: [46.6033540, 1.8883335],
       zoom: 5,
-      minZoom: 5,
-      maxBounds: bounds
+      zoomSnap: 0.25,
+      minZoom:5,
+      maxBounds:bounds
   });
+
+//Zoom sur la France métropolitaine
+mapid.fitBounds(bounds);
 
 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(mapid);
 
-
+//Variables globales
 var geojson; //Objet GeoJSON affiché sur la carte
 var legend = L.control({position: 'bottomleft'}); //Légende
+var JSONFile; //Fichier JSON affichant les zones
+var grades = [10, 20, 30, 40, 50, 60, 70];
+var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
 
+//Ensemble des balises du fichier html
+var choixRegion = document.getElementById("choixRegion");
+var choixDepartement = document.getElementById("choixDepartement");
+var choixCommune = document.getElementById("choixCommune");
+var choixZone = document.getElementById("choixZone");
+var region = document.getElementById("region");
+var departement = document.getElementById("departement");
+var commune = document.getElementById("commune");
 
 /*-------------Lecture d'un fichier JSON-----------*/
 
@@ -47,7 +66,6 @@ function lire_fichier_JSON(JSON_filename){
 }
 
 /*-------------Interactivité avec la carte, design-----------*/
-
 
 /*
 Fonction permettant de créer le style des polygones
@@ -83,10 +101,10 @@ function highlightFeature(e) {
     var layer = e.target;
 
     layer.setStyle({
-        weight: 5,
-        color: '#666',
+        weight: 3,
+        color: '#000000',
         dashArray: '',
-        fillOpacity: 0.7
+        fillOpacity: 0.8
     });
 
     if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
@@ -113,6 +131,51 @@ function onEachFeature(feature, layer) {
     });
 }
 
+/*
+Fonction permettant d'éviter de sélectionner certaines données
+en fonction du niveau de zoom
+*/
+function restreindre_donnees(){
+  var zoomLevel = mapid.getZoom();
+
+  //Interdiction de l'accès aux communes
+  if (zoomLevel < 7){
+
+    /*
+    On enlève la carte des communes si le niveau de zoom est inférieur à 7.
+    On met celle des départements par défaut
+    */
+    if (choixZone.choixzone.value == "commune"){
+      departement.checked = true;
+      choisir_zone();
+    }
+
+    //On cache la case des communes
+    choixCommune.style.display = "none";
+    choixDepartement.style.display = "block";
+    choixRegion.style.display = "block";
+
+  }else if (zoomLevel < 8 ){
+    //On affiche toutes les possibilités
+    choixCommune.style.display = "block";
+    choixDepartement.style.display = "block";
+    choixRegion.style.display = "block";
+  }else{
+    /*
+    On enlève la carte des région si le niveau de zoom est supérieur à 8.
+    On met celle des départements par défaut
+    */
+    if (choixZone.choixzone.value == "region"){
+      departement.checked = true;
+      choisir_zone();
+    }
+
+    //On cache la case des régions
+    choixCommune.style.display = "block";
+    choixDepartement.style.display = "block";
+    choixRegion.style.display = "none";
+    }
+}
 
 //Fonction permettant de créer la syntaxe HTML pour la légende
 function createLegend(){
@@ -158,13 +221,7 @@ info.addTo(mapid);
 
 /*---------------Sélection de la couche---------------*/
 
-var choixZone = document.getElementById("choixZone");
-
-var JSONFile;
-var grades = [10, 20, 30, 40, 50, 60, 70];
-var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
-
-function choisir_zone(event) {
+function choisir_zone() {
   if (choixZone.choixzone.value == "region"){
     JSONFile = "./Fichiers_Geojson/Regions2016.json";
     grades = [10, 20, 30, 40, 50, 60, 70];
@@ -193,6 +250,9 @@ function choisir_zone(event) {
 
 /*----------------------*/
 
+/*
+Fonction qui s'effectue au chargement de la page pour afficher des données
+*/
 function onLoad(){
   lire_fichier_JSON("./Fichiers_Geojson/Regions2016.json");
   showLegend(grades);
@@ -200,3 +260,4 @@ function onLoad(){
 
 window.onload = onLoad;
 choixZone.addEventListener('click',choisir_zone);
+mapid.on('zoom',restreindre_donnees);
