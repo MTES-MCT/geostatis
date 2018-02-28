@@ -1,7 +1,19 @@
 /*-----------------------------Variables globales-----------------------------*/
 
 
-var mapid = L.map('mapid').setView([46.6033540, 1.8883335], 5); // Carte
+//var mapid = L.map('mapid').setView([46.6033540, 1.8883335], 5); // Carte
+// Set bounds to France
+  var bounds = [
+    [40.332899,-5.066836], // Southwest coordinates
+    [51.340579,10.110196]  // Northeast coordinates
+  ];
+  // initialize the map on the "map" div with a given center and zoom
+  var mapid = L.map('mapid', {
+      center: [46.6033540, 1.8883335],
+      zoom: 5,
+      minZoom: 5,
+      maxBounds: bounds
+  });
 
 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
