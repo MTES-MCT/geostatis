@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Display a map</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+  <div id='map'></div>
+  <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+  <script>
+  mapboxgl.accessToken = 'pk.eyJ1IjoibWF0bWFyZ28iLCJhIjoiY2piMjM3OWdtMjdtMzJxcGl1cGJnNXg3ZSJ9.aOYDLg13TkgDAe6yeNQAoQ';
+
+  // Set bounds to France
+  var bounds = [
+    [-5.066836, 40.332899], // Southwest coordinates
+    [10.110196, 51.340579]  // Northeast coordinates
+  ];
+
+  var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v9',
+      center: [2.587340, 48.841118],
+      zoom: 12,
+      attributionControl: false,
+      maxBounds: bounds
+  });
+  map.addControl(new mapboxgl.AttributionControl(), 'top-left');
+
+  // var xhttp = new XMLHttpRequest();
+  // xhttp.onreadystatechange = function() {
+  //   if (this.readyState == 4 && this.status == 200) {
+  //     document.getElementById("demo").innerHTML = this.responseText;
+  //   }
+  // };
+
+  var geojson='region_carto_wgs84.json';
+
+  map.on('load', function() {
+
+    map.addLayer({
+        'id': 'regions',
+        'type': 'fill',
+        'source': {
+            'type': 'geojson',
+            'data': geojson
+        },
+        'layout': {},
+        'paint': {
+            'fill-color': '#f08',
+            'fill-opacity': 0.4
+        }
+        })
+
+  var complete = map.getLayer('regions');
+
+  var bounds = new mapboxgl.LngLatBounds();
+
+  geojson.features.forEach(function(feature) {
+    bounds.extend(feature.geometry.coordinates);
+  });
+
+  map.fitBounds(bounds);
+
+  });
+
+</script>
+
+</body>
+</html>
