@@ -3,7 +3,7 @@
   flex-direction: row;
 }
 
-#mapid {
+#MetropolitanFranceMap {
   height: 600px;
   width: 600px;}
 
@@ -15,6 +15,7 @@
       line-height: 18px;
       color: #555;
   }
+
   .legend i {
       width: 18px;
       height: 18px;

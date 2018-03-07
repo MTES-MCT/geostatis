@@ -43,11 +43,12 @@ Zoom est de 5, 5 est le niveau de zoom minimal
 Il est possible de zoomer avec un pas de 0.25
 On ne peut pas sortir de la France avec maxBounds
 */
-var mapid = L.map('mapid', {
+var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
       center: [46.6033540, 1.8883335],
       zoom: 5,
       zoomSnap: 0.25,
       minZoom:5,
+      attributionControl: false,
       maxBounds:maxBounds
   });
 
@@ -113,7 +114,7 @@ var MayotteMap = L.map('MayotteMap', {
 });
 
 //Zoom sur la France métropolitaine
-mapid.fitBounds(bounds);
+MetropolitanFranceMap.fitBounds(bounds);
 
 //Zoom sur la Guadeloupe
 GuadeloupeMap.fitBounds(GuadeloupeMaxBounds);
@@ -152,23 +153,23 @@ disableMoveInMap(MayotteMap);
 
 
 //Ajout de la couche sur les cartes
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(mapid);
+}).addTo(MetropolitanFranceMap);
 
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 }).addTo(GuadeloupeMap);
 
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 }).addTo(MartiniqueMap);
 
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 }).addTo(GuyaneMap);
 
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 }).addTo(ReunionMap);
 
-L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 }).addTo(MayotteMap);
 
 //Variables globales
@@ -204,9 +205,15 @@ function lire_fichier_JSON(JSON_filename){
   request.onload = function() {
     var places = request.response;
     if (geojson){
-      mapid.removeLayer(geojson);
+      MetropolitanFranceMap.removeLayer(geojson);
     }
-    geojson = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(mapid);
+    geojson = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
+
+    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
+    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
+    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
+    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
+    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
   }
 }
 
@@ -225,6 +232,7 @@ function style(feature) {
         fillOpacity: 0.7
     };
 }
+
 
 /*
 Fonction permettant d'obtenir la couleur d'un polygone
@@ -265,7 +273,7 @@ function resetHighlight(e) {
 }
 
 function zoomToFeature(e) {
-    mapid.fitBounds(e.target.getBounds());
+    MetropolitanFranceMap.fitBounds(e.target.getBounds());
 }
 
 function onEachFeature(feature, layer) {
@@ -281,7 +289,7 @@ Fonction permettant d'éviter de sélectionner certaines données
 en fonction du niveau de zoom
 */
 function restreindre_donnees(){
-  var zoomLevel = mapid.getZoom();
+  var zoomLevel = MetropolitanFranceMap.getZoom();
 
   //Interdiction de l'accès aux communes
   if (zoomLevel < 7){
@@ -342,14 +350,14 @@ function showLegend(){
   legend.onAdd = function (map){
     return createLegend();
   };
-  legend.addTo(mapid);
+  legend.addTo(MetropolitanFranceMap);
 }
 
 /* Pop-up sur le côté avec les infos de la zone étudiée */
 
 var info = L.control({position: 'topright'});
 
-info.onAdd = function (mapid) {
+info.onAdd = function (MetropolitanFranceMap) {
     this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
     this.update();
     return this._div;
@@ -362,7 +370,7 @@ info.update = function (properties) {
         : 'Survoler une région');
 };
 
-info.addTo(mapid);
+info.addTo(MetropolitanFranceMap);
 
 /*---------------Sélection de la couche---------------*/
 
@@ -405,4 +413,4 @@ function onLoad(){
 
 window.onload = onLoad;
 choixZone.addEventListener('click',choisir_zone);
-mapid.on('zoom',restreindre_donnees);
+MetropolitanFranceMap.on('zoom',restreindre_donnees);
