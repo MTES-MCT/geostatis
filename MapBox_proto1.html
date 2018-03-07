@@ -9,10 +9,24 @@
     <style>
         body { margin:0; padding:0; }
         #map { position:absolute; top:0; bottom:0; width:100%; }
+        #features {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 300px;
+        height: 100px;
+        overflow: auto;
+        background: rgba(255, 255, 255, 0.8);
+        }
+        #map canvas {
+        cursor: crosshair;
+    }
     </style>
 </head>
 <body>
   <div id='map'></div>
+  <pre id='features'></pre>
   <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
   <script>
   mapboxgl.accessToken = 'pk.eyJ1IjoibWF0bWFyZ28iLCJhIjoiY2piMjM3OWdtMjdtMzJxcGl1cGJnNXg3ZSJ9.aOYDLg13TkgDAe6yeNQAoQ';
@@ -50,19 +64,40 @@ xmlhttp.onreadystatechange = function() {
               },
               'layout': {},
               'paint': {
-                  'fill-color': '#f08',
+                  'fill-color': {
+                    property:'INSEE_REG',
+                    type:'categorical',
+                    stops:[
+                      ['53','red']
+                    ]
+                  },
                   'fill-opacity': 0.4
               }
               })
 
+          map.addLayer({
+              'id': 'regions-hover',
+              'type': 'line',
+              'source': {
+                  'type': 'geojson',
+                  'data': geojs_o
+              },
+              'layout': {},
+              'paint': {
+                  'line-color': '#f08',
+                  "line-width": 2
+              },
+              "filter": ["==", "ID", ""]
+              })
+
+              function limitMap(){
+                map.setMaxBounds(map.getBounds());
+              };
               var complete = turf.bbox(geojs_o);
               map.fitBounds(complete, {padding:10 , animate:false});
-              map.on('render', function(){
-                map.setMaxBounds(map.getBounds());
-              });
-              map.off('render', function(){
-                map.setMaxBounds(map.getBounds());
-              });
+              map.on('render', limitMap());
+              map.off('render', limitMap());
+
 
     };
   };
@@ -70,8 +105,26 @@ xmlhttp.onreadystatechange = function() {
   xmlhttp.send();
 });
 
+// map.on('mousemove', function (e) {
+//     var features = map.queryRenderedFeatures(e.point);
+//     document.getElementById('features').innerHTML = JSON.stringify(features, null, 2);
+// });
+
+map.on('mousemove', 'regions', function(e) {
+        map.setFilter('regions-hover', ["==", "ID", e.features[0].properties.ID]);
+        var coordinates = e.features[0].geometry.coordinates.slice();
+        var nom_reg = e.features[0].properties.NOM_REG;
+        var id = e.features[0].properties.ID;
+        var insee = e.features[0].properties.INSEE_REG;
+        document.getElementById('features').innerHTML = '<p>'+nom_reg+'</p>'+'<p>'+id+'</p>'+'<p>'+insee+'</p>' ;
+    });
+
+map.on("mouseleave", "regions", function() {
+        map.setFilter('regions-hover', ["==", "ID", ""]);
+    });
 
 </script>
+
 
 </body>
 </html>
