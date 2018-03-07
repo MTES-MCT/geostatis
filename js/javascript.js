@@ -6,26 +6,170 @@
     [51.248691, 9.651224]  // Northeast coordinates
   ];
 
-  /*
-  Initialisation de la carte en centrant au centre de la France
-  Zoom est de 5, 5 est le niveau de zoom minimal
-  Il est possible de zoomer avec un pas de 0.25
-  On ne peut pas sortir de la France avec maxBounds
-  */
-  var mapid = L.map('mapid', {
+  /*Limites maximales de la carte qu'on autorise*/
+  var maxBounds = [
+    [38.135,-8.481], // Southwest coordinates
+    [52.456,11.909]  // Northeast coordinates
+  ];
+
+var GuadeloupeMaxBounds = [
+    [15.7989,-61.8558],
+    [16.5651,-60.9439]
+  ];
+
+var MartiniqueMaxBounds = [
+    [14.3589,-61.3161],
+    [14.9249,-60.7544]
+  ];
+
+var GuyaneMaxBounds = [
+    [1.977,-54.921],
+    [6.206,-50.977]
+  ];
+
+var ReunionMaxBounds = [
+    [-21.4262,55.1376],
+    [-20.8254,55.8943]
+  ];
+
+var MayotteMaxBounds = [
+    [-13.0434,44.9945],
+    [-12.6162,45.3255]
+  ];
+
+/*
+Initialisation de la carte en centrant au centre de la France
+Zoom est de 5, 5 est le niveau de zoom minimal
+Il est possible de zoomer avec un pas de 0.25
+On ne peut pas sortir de la France avec maxBounds
+*/
+var mapid = L.map('mapid', {
       center: [46.6033540, 1.8883335],
       zoom: 5,
       zoomSnap: 0.25,
       minZoom:5,
-      maxBounds:bounds
+      maxBounds:maxBounds
   });
+
+
+/*
+Carte de la Guadeloupe
+*/
+var GuadeloupeMap = L.map('GuadeloupeMap', {
+      center: [16.2490067,-61.5650444],
+      zoom: 8,
+      zoomSnap:0.25,
+      zoomControl:false,
+      attributionControl: false
+        //maxBounds:maxBounds
+    });
+
+/*
+Carte de la Martinique
+*/
+var MartiniqueMap = L.map('MartiniqueMap', {
+        center: [14.6553,-60.9906],
+        zoom: 8,
+        zoomSnap:0.25,
+        zoomControl:false,
+        attributionControl: false
+          //maxBounds:maxBounds
+      });
+
+/*
+Carte de la Guyane
+*/
+var GuyaneMap = L.map('GuyaneMap', {
+    center: [4.0039882, -52.9999980],
+    zoom: 5,
+    zoomSnap:0.25,
+    zoomControl:false,
+    attributionControl: false
+    //maxBounds:maxBounds
+        });
+
+/*
+Carte de la Réunion
+*/
+var ReunionMap = L.map('ReunionMap', {
+  center: [-21.1309332, 55.5265771],
+  zoom: 8,
+  zoomSnap:0.25,
+  zoomControl:false,
+  attributionControl: false
+  //maxBounds:maxBounds
+  });
+
+/*
+Carte de MayotteMap
+*/
+var MayotteMap = L.map('MayotteMap', {
+    center: [-12.8230480, 45.1520755],
+    zoom: 9,
+    zoomSnap:0.25,
+    zoomControl:false,
+    attributionControl: false
+    //maxBounds:maxBounds
+});
 
 //Zoom sur la France métropolitaine
 mapid.fitBounds(bounds);
 
+//Zoom sur la Guadeloupe
+GuadeloupeMap.fitBounds(GuadeloupeMaxBounds);
+
+//Zoom sur la Martinique
+MartiniqueMap.fitBounds(MartiniqueMaxBounds);
+
+//Zoom sur la Guyane
+GuyaneMap.fitBounds(GuyaneMaxBounds);
+
+//Zoom sur la Réunion
+ReunionMap.fitBounds(ReunionMaxBounds);
+
+//Zoom sur Mayotte
+MayotteMap.fitBounds(MayotteMaxBounds);
+
+/*
+Fonction pour bloquer la navigation dans les cartes des Outre-mer
+*/
+function disableMoveInMap(DROM_Map){
+  var map = DROM_Map;
+  map.dragging.disable();
+  map.touchZoom.disable();
+  map.doubleClickZoom.disable();
+  map.scrollWheelZoom.disable();
+  map.boxZoom.disable();
+  map.keyboard.disable();
+}
+
+
+disableMoveInMap(GuadeloupeMap);
+disableMoveInMap(MartiniqueMap);
+disableMoveInMap(GuyaneMap);
+disableMoveInMap(ReunionMap);
+disableMoveInMap(MayotteMap);
+
+
+//Ajout de la couche sur les cartes
 L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(mapid);
+
+L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+}).addTo(GuadeloupeMap);
+
+L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+}).addTo(MartiniqueMap);
+
+L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+}).addTo(GuyaneMap);
+
+L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+}).addTo(ReunionMap);
+
+L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+}).addTo(MayotteMap);
 
 //Variables globales
 var geojson; //Objet GeoJSON affiché sur la carte
@@ -42,6 +186,7 @@ var choixZone = document.getElementById("choixZone");
 var region = document.getElementById("region");
 var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
+var affichageStats = document.getElementById("affichageStats");
 
 /*-------------Lecture d'un fichier JSON-----------*/
 
@@ -127,7 +272,7 @@ function onEachFeature(feature, layer) {
     layer.on({
         mouseover: highlightFeature,
         mouseout: resetHighlight,
-        click: zoomToFeature
+        //click: zoomToFeature
     });
 }
 
