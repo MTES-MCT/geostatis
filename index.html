@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Basemaps</title>
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <title>Carte dynamique interactive</title>
+  	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-    <script src='https://api.mapbox.com/mapbox-gl-js/v0.44.0/mapbox-gl.js'></script>
-    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-language/v0.9.2/mapbox-gl-language.js'></script>
-    <script src='https://d3js.org/d3.v5.min.js'></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
+    <link rel="stylesheet" href="css/style.css"/>
+	<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js" integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw==" crossorigin=""></script>
+	<script src='https://d3js.org/d3.v5.min.js'></script>
     <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v0.44.0/mapbox-gl.css' rel='stylesheet' />
     <style>
 body {
   margin: 0;
@@ -45,20 +45,54 @@ body {
   margin-right: 5px;
   width: 10px;
 }
-
     </style>
   </head>
   <body>
-    <div id="mapid"></div>
+    <div id="allMaps">
+      <div id="MetropolitanFranceMap"></div>
 
-    <div id='state-legend' class='legend'>
-      <h4>INSEE_REG</h4>
-      <div><span style='background-color: #b30000'></span>100</div>
-      <div><span style='background-color: #e34a33'></span>75</div>
-      <div><span style='background-color: #fc8d59'></span>50</div>
-      <div><span style='background-color: #fdcc8a'></span>25</div>
-      <div><span style='background-color: #fef0d9'></span>0</div>
+      <div id="Overseas_Maps">
+
+        <div id="GuadeloupeMap" class="DROM_Maps"></div>
+
+        <div id="MartiniqueMap" class="DROM_Maps"></div>
+
+        <div id="GuyaneMap" class="DROM_Maps"></div>
+
+        <div id="ReunionMap" class="DROM_Maps"></div>
+
+        <div id="MayotteMap" class="DROM_Maps"></div>
+
+      </div>
     </div>
-    <script src="js/test.js"></script>
+    <form id="choixZone">
+      Veuillez choisir votre couche administrative :
+        <div id="choixRegion">
+      <input type="radio" id="region"
+       name="choixzone" value="region" checked>
+      <label for="region">Régions</label>
+    </div>
+
+      <div id="choixDepartement">
+        <input type="radio" id="departement"
+       name="choixzone" value="departement">
+       <label for="departement">Départements</label>
+     </div>
+
+      <div id="choixCommune">
+        <input type="radio" id="commune"
+       name="choixzone" value="commune">
+       <label for="commune">Communes</label>
+      </div>
+
+  </form>
+
+  <div id="affichageStats">
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw==" crossorigin=""></script>
+    <script src="js/javascript.js"></script>
   </body>
 </html>
