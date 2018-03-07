@@ -1,44 +1,51 @@
-/*-------------------------------Variables------------------------------------*/
+/*----------------------Variables des limites maximales-----------------------*/
 
 /*Limites maximales de la France métropolitaine*/
-  var bounds = [
+  var MetropolitanFranceInitBounds = [
     [41.340624,-4.936423], // Southwest coordinates
     [51.248691, 9.651224]  // Northeast coordinates
   ];
 
-  /*Limites maximales de la carte qu'on autorise*/
-  var maxBounds = [
+  /*Limites maximales de la carte de la France métropolitaine qu'on autorise*/
+  var MetropolitanFranceMaxBounds = [
     [38.135,-8.481], // Southwest coordinates
     [52.456,11.909]  // Northeast coordinates
   ];
 
+/*Limites maximales de la carte de la Guadeloupe*/
 var GuadeloupeMaxBounds = [
     [15.7989,-61.8558],
     [16.5651,-60.9439]
   ];
 
+/*Limites maximales de la carte de la Martinique*/
 var MartiniqueMaxBounds = [
     [14.3589,-61.3161],
     [14.9249,-60.7544]
   ];
 
+/*Limites maximales de la carte de la Guyane*/
 var GuyaneMaxBounds = [
     [1.977,-54.921],
     [6.206,-50.977]
   ];
 
+/*Limites maximales de la carte de la Réunion*/
 var ReunionMaxBounds = [
     [-21.4262,55.1376],
     [-20.8254,55.8943]
   ];
 
+/*Limites maximales de la carte de Mayotte*/
 var MayotteMaxBounds = [
     [-13.0434,44.9945],
     [-12.6162,45.3255]
   ];
 
+/*----------------------------Création des cartes-----------------------------*/
+
 /*
-Initialisation de la carte en centrant au centre de la France
+Initialisation de la carte en centrant au centre de la France métropolitaine
 Zoom est de 5, 5 est le niveau de zoom minimal
 Il est possible de zoomer avec un pas de 0.25
 On ne peut pas sortir de la France avec maxBounds
@@ -49,9 +56,8 @@ var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
       zoomSnap: 0.25,
       minZoom:5,
       attributionControl: false,
-      maxBounds:maxBounds
+      maxBounds:MetropolitanFranceMaxBounds
   });
-
 
 /*
 Carte de la Guadeloupe
@@ -114,7 +120,7 @@ var MayotteMap = L.map('MayotteMap', {
 });
 
 //Zoom sur la France métropolitaine
-MetropolitanFranceMap.fitBounds(bounds);
+MetropolitanFranceMap.fitBounds(MetropolitanFranceInitBounds);
 
 //Zoom sur la Guadeloupe
 GuadeloupeMap.fitBounds(GuadeloupeMaxBounds);
@@ -131,11 +137,13 @@ ReunionMap.fitBounds(ReunionMaxBounds);
 //Zoom sur Mayotte
 MayotteMap.fitBounds(MayotteMaxBounds);
 
+/*----------------------Propriétés des cartes Outre-Mer-----------------------*/
+
 /*
-Fonction pour bloquer la navigation dans les cartes des Outre-mer
+Fonction pour bloquer la navigation dans dans une carte
 */
-function disableMoveInMap(DROM_Map){
-  var map = DROM_Map;
+function disableMovingInMap(mapObject){
+  var map = mapObject;
   map.dragging.disable();
   map.touchZoom.disable();
   map.doubleClickZoom.disable();
@@ -144,33 +152,35 @@ function disableMoveInMap(DROM_Map){
   map.keyboard.disable();
 }
 
+/*
+Fonction pour bloquer la navigation dans les cartes des Outre-mer
+*/
+function disableMovingInOverseasMaps(){
+  disableMovingInMap(GuadeloupeMap);
+  disableMovingInMap(MartiniqueMap);
+  disableMovingInMap(GuyaneMap);
+  disableMovingInMap(ReunionMap);
+  disableMovingInMap(MayotteMap);
+}
 
-disableMoveInMap(GuadeloupeMap);
-disableMoveInMap(MartiniqueMap);
-disableMoveInMap(GuyaneMap);
-disableMoveInMap(ReunionMap);
-disableMoveInMap(MayotteMap);
+disableMovingInOverseasMaps();
 
+/*----------------------Propriétés des cartes Outre-Mer-----------------------*/
 
 //Ajout de la couche sur les cartes
-L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(MetropolitanFranceMap);
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(MetropolitanFranceMap);
 
-L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-}).addTo(GuadeloupeMap);
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(GuadeloupeMap);
 
-L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-}).addTo(MartiniqueMap);
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(MartiniqueMap);
 
-L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-}).addTo(GuyaneMap);
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(GuyaneMap);
 
-L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-}).addTo(ReunionMap);
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(ReunionMap);
 
-L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-}).addTo(MayotteMap);
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(MayotteMap);
+
+/*-------------------------------Variables globales---------------------------*/
 
 //Variables globales
 var geojson; //Objet GeoJSON affiché sur la carte
@@ -178,6 +188,7 @@ var legend = L.control({position: 'bottomleft'}); //Légende
 var JSONFile; //Fichier JSON affichant les zones
 var grades = [10, 20, 30, 40, 50, 60, 70];
 var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
+var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 
 //Ensemble des balises du fichier html
 var choixRegion = document.getElementById("choixRegion");
@@ -189,7 +200,7 @@ var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
 var affichageStats = document.getElementById("affichageStats");
 
-/*-------------Lecture d'un fichier JSON-----------*/
+/*------------------------Lecture d'un fichier JSON---------------------------*/
 
 /*
 Fonction permettant la lecture d'un fichier JSON pour l'afficher sur la Carte
@@ -197,16 +208,17 @@ Fonction permettant la lecture d'un fichier JSON pour l'afficher sur la Carte
 function lire_fichier_JSON(JSON_filename){
 
   var JSONFile = JSON_filename;
-
+  var places;
   var request = new XMLHttpRequest();
   request.open('GET', JSONFile);
   request.responseType = 'json';
   request.send();
   request.onload = function() {
-    var places = request.response;
+    places = request.response;
     if (geojson){
       MetropolitanFranceMap.removeLayer(geojson);
     }
+
     geojson = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
 
     L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
@@ -215,9 +227,10 @@ function lire_fichier_JSON(JSON_filename){
     L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
     L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
   }
+
 }
 
-/*-------------Interactivité avec la carte, design-----------*/
+/*--------------------Interactivité avec la carte, design---------------------*/
 
 /*
 Fonction permettant de créer le style des polygones
@@ -233,7 +246,6 @@ function style(feature) {
     };
 }
 
-
 /*
 Fonction permettant d'obtenir la couleur d'un polygone
 en fonction d'une échelles de valeurs et de couleurs
@@ -248,8 +260,9 @@ function getColor(d) {
     return colors[colors.length-1];
 }
 
-/* Surbrillance de la carte */
-
+/*
+Surbrillance de la carte
+*/
 function highlightFeature(e) {
     var layer = e.target;
 
@@ -267,15 +280,24 @@ function highlightFeature(e) {
     info.update(layer.feature.properties);
 }
 
+/*
+Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
+*/
 function resetHighlight(e) {
     geojson.resetStyle(e.target);
     info.update();
 }
 
+/*
+Fonction permettant de zoomer sur l'objet lorsqu'on clique dessus
+*/
 function zoomToFeature(e) {
     MetropolitanFranceMap.fitBounds(e.target.getBounds());
 }
 
+/*
+Fonction gérant les événements liés à la carte (mouseout, mouseover...)
+*/
 function onEachFeature(feature, layer) {
     layer.on({
         mouseover: highlightFeature,
@@ -345,7 +367,9 @@ function createLegend(){
   return div;
 }
 
-//Fonction permettant d'afficher la légende
+/*
+Fonction permettant d'afficher la légende
+*/
 function showLegend(){
   legend.onAdd = function (map){
     return createLegend();
@@ -353,26 +377,36 @@ function showLegend(){
   legend.addTo(MetropolitanFranceMap);
 }
 
-/* Pop-up sur le côté avec les infos de la zone étudiée */
+/*
+Fonction permettant d'afficher la barre d'information qui affiche le nom de la
+zone sélectionnée avec d'autres infos
+*/
+function showPopUp(mapObject){
 
-var info = L.control({position: 'topright'});
+  var map = mapObject;
 
-info.onAdd = function (MetropolitanFranceMap) {
-    this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-    this.update();
-    return this._div;
-};
+  /* Pop-up sur le côté avec les infos de la zone étudiée */
+  info = L.control({position: 'topright'});
 
-// method that we will use to update the control based on feature properties passed
-info.update = function (properties) {
-    this._div.innerHTML = '<h4>Region information</h4>' +  (properties ?
-        '<b>' + properties.nom + '</b><br />' + properties.code_insee
-        : 'Survoler une région');
-};
+  info.onAdd = function (MetropolitanFranceMap) {
+      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+      this.update();
+      return this._div;
+  };
 
-info.addTo(MetropolitanFranceMap);
+  // method that we will use to update the control based on feature properties passed
+  info.update = function (properties) {
+      this._div.innerHTML = '<h4>Region information</h4>' +  (properties ?
+          '<b>' + properties.nom + '</b><br />' + properties.code_insee
+          : 'Survoler une région');
+  };
 
-/*---------------Sélection de la couche---------------*/
+  info.addTo(mapObject); //Ajout de l'objet sur la carte
+}
+
+showPopUp(MetropolitanFranceMap);
+
+/*------------------------Sélection de la couche------------------------------*/
 
 function choisir_zone() {
   if (choixZone.choixzone.value == "region"){
