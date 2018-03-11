@@ -8,32 +8,21 @@ var MetropolitanFranceMaxBounds = [
   [38.135,-8.481], // Southwest coordinates
   [52.456,11.909]  // Northeast coordinates
 ];
-var grades = [10, 20, 30, 40, 50, 60, 70];
-var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
+var color = d3.scaleThreshold()
+              .domain(d3.range(10, 70, 10))
+              .range(d3.schemeYlOrRd[8]);
 /*
 Fonction permettant de créer le style des polygones
 */
 function style(feature) {
     return {
-        fillColor: getColor(parseInt(feature.properties.id)),
+        fillColor: color(parseInt(feature.properties.id)),
         weight: 1,
         opacity: 1,
         color: 'white',
         dashArray: '3',
         fillOpacity: 0.7
     };
-}
-/*
-Fonction permettant d'obtenir la couleur d'un polygone
-en fonction d'une échelles de valeurs et de couleurs
- */
-function getColor(d) {
-    for (var i = 0; i < grades.length-1; i++) {
-      if (d >= grades[i] && d < grades[i+1]){
-        return colors[i];
-      }
-    }
-    return colors[colors.length-1];
 }
 /*
 Surbrillance de la carte
@@ -73,6 +62,7 @@ function onEachFeature(feature, layer) {
 }
 
 
+
 //mapboxgl.accessToken = 'pk.eyJ1IjoibWF0bWFyZ28iLCJhIjoiY2piMjM3OWdtMjdtMzJxcGl1cGJnNXg3ZSJ9.aOYDLg13TkgDAe6yeNQAoQ';
 var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
   center: [46.6033540, 1.8883335],
@@ -93,7 +83,7 @@ L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(
 d3.text("./fonds_carte/json/testjsx.txt").then(function(data) {
 
   var json = JSON.parse(JXG.decompress(data));
-  var places = topojson.feature(json, json.objects.communes);
+  var places = topojson.feature(json, json.objects.departements);
 
   geojson = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
 });
