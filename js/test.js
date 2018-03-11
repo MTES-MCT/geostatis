@@ -1,85 +1,41 @@
+/*Limites maximales de la France métropolitaine*/
+var MetropolitanFranceInitBounds = [
+  [41.340624,-4.936423], // Southwest coordinates
+  [51.248691, 9.651224]  // Northeast coordinates
+];
+/*Limites maximales de la carte de la France métropolitaine qu'on autorise*/
+var MetropolitanFranceMaxBounds = [
+  [38.135,-8.481], // Southwest coordinates
+  [52.456,11.909]  // Northeast coordinates
+];
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibWF0bWFyZ28iLCJhIjoiY2piMjM3OWdtMjdtMzJxcGl1cGJnNXg3ZSJ9.aOYDLg13TkgDAe6yeNQAoQ';
-var map = new mapboxgl.Map({
-  container: 'mapid',
-  style: 'mapbox://styles/mapbox/light-v9',
-  center: [2.6302, 46.4905],
+//mapboxgl.accessToken = 'pk.eyJ1IjoibWF0bWFyZ28iLCJhIjoiY2piMjM3OWdtMjdtMzJxcGl1cGJnNXg3ZSJ9.aOYDLg13TkgDAe6yeNQAoQ';
+var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
+  center: [46.6033540, 1.8883335],
   zoom: 5,
+  zoomSnap: 0.25,
+  minZoom:5,
   attributionControl: false,
+  maxBounds:MetropolitanFranceMaxBounds
 });
-map.addControl(new mapboxgl.NavigationControl({
-  showCompass: false,
-}), 'top-right');
-map.addControl(new mapboxgl.ScaleControl({
-  maxWidth: 100,
-  unit: 'metric'
-}));
-map.addControl(new MapboxLanguage());
-map.addControl(new mapboxgl.AttributionControl({
-  compact: true,
-}));
 
-map.on('load', function () {
+//Zoom sur la France métropolitaine
+MetropolitanFranceMap.fitBounds(MetropolitanFranceInitBounds);
 
-	d3.json("./fonds_carte/json_com_dep_reg_mathieu/region_carto_wgs84.json")
-		.then(function(data) {
+//Ajout de la couche sur les cartes
+L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(MetropolitanFranceMap);
 
-	  map.addSource('regions', {
-      "type": "geojson",
-      "data": data
-	  });
+d3.json("./fonds_carte/json/com-dep-reg_tout_topo_v2.json").then(function(data) {
 
-	  var style_regions = {
-      "fill-opacity": 0.9,
-      "fill-outline-color": "rgba(0,0,0,0.2)",
-      "fill-color": [
-        'interpolate',
-        ['linear'],
-        ['to-number', ['get', 'INSEE_REG']],
-        0,  '#fef0d9',
-				25, '#fdcc8a',
-				50, '#fc8d59',
-				75, '#e34a33',
-				100,'#b30000'
-      ],
-    };
-    var style_regions_hover = Object.assign({}, style_regions);
-    style_regions_hover["fill-opacity"] = 1;
-    style_regions_hover["fill-outline-color"] = 'black';
-
-	  map.addLayer({
-	    "id": "regions",
-	    "type": "fill",
-	    "source": "regions",
-	    "paint": style_regions
-		}, 'place-city-sm');
-
-	  map.addLayer({
-	    "id": "regions-hover",
-	    "type": "fill",
-	    "source": "regions",
-	    "paint": style_regions_hover,
-      "filter": ["==", "INSEE_REG", ""]
-		}, 'place-city-sm');
-
-		var bounds = turf.bbox(data);
-		map.fitBounds(bounds, {padding: 20, animate:false});
-		map.on('render', setMaxBoundsOnce);
-		function setMaxBoundsOnce(e) {
-			var nbounds = map.getBounds();
-			map.setMaxBounds(nbounds);
-			map.off('render', setMaxBoundsOnce);
-		};
-
-    map.on("mousemove", "regions", function(e) {
-    	map.getCanvas().style.cursor = 'pointer';
-      map.setFilter("regions-hover", ["==", "INSEE_REG", e.features[0].properties.INSEE_REG]);
-    });
-    map.on("mouseleave", "regions", function(e) {
-    	map.getCanvas().style.cursor = '';
-      map.setFilter("regions-hover", ["==", "INSEE_REG", ""]);
-    });
-
-	});
+  // var geojson = topojson.feature(data, data.objects.regions);
+  var test = JSON.stringify(data);
+  console.log(test.length);
+  // var compressed = LZString.compress(test);
+  // console.log(compressed.length);
+  var compressed2 = pako.deflate(test, { to: 'string' });
+  console.log(compressed2.length);
+  var blob = new Blob([compressed2], {type: "application/octet-stream"});
+  var fileName = "testpako.bin";
+  saveAs(blob, fileName);
 
 });

@@ -349,7 +349,7 @@ function restreindre_donnees(){
     choixCommune.style.display = "block";
     choixDepartement.style.display = "block";
     choixRegion.style.display = "none";
-    }
+  }
 }
 
 //Fonction permettant de créer la syntaxe HTML pour la légende
@@ -409,23 +409,18 @@ showPopUp(MetropolitanFranceMap);
 /*------------------------Sélection de la couche------------------------------*/
 
 function choisir_zone() {
-  if (choixZone.choixzone.value == "region"){
-    JSONFile = "./Fichiers_Geojson/Regions2016.json";
-    grades = [10, 20, 30, 40, 50, 60, 70];
-    colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
-}
-  else if (choixZone.choixzone.value == "departement") {
-    JSONFile = "./Fichiers_Geojson/Departements2016.json";
+  if (choixZone.choixzone.value == "departement") {
+    JSONFile = "./fonds_carte/json/depa_carto_wgs84.json";
     grades = [10, 20, 30, 40, 50, 60, 70, 80, 90];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
   else if (choixZone.choixzone.value == "commune") {
-    JSONFile = "./Fichiers_Geojson/comm_carto_wgs84.json";
+    JSONFile = "./fonds_carte/json/comm_carto_wgs84.json";
     grades = [10000, 20000, 30000];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
   else {
-    JSONFile = "./Fichiers_Geojson/Regions2016.json";
+    JSONFile = "./fonds_carte/json/region_carto_wgs84.json";
     grades = [10, 20, 30, 40, 50, 60, 70];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
@@ -441,7 +436,7 @@ function choisir_zone() {
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad(){
-  lire_fichier_JSON("./Fichiers_Geojson/Regions2016.json");
+  lire_fichier_JSON("./fonds_carte/json/region_carto_wgs84.json");
   showLegend(grades);
 }
 
