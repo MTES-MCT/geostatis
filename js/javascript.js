@@ -189,7 +189,13 @@ function addLayers(){
 /*-------------------------------Variables globales---------------------------*/
 
 //Variables globales
-var geojson; //Objet GeoJSON affiché sur la carte
+var geojsonMetropole; //Objet GeoJSON affiché sur la carte
+var geojsonGuadeloupe;
+var geojsonMartinique;
+var geojsonGuyane;
+var geojsonReunion;
+var geojsonMayotte;
+
 var legend = L.control({position: 'bottomleft'}); //Légende
 var Geometry_JSON = "./Fichiers_Geojson/Regions2016.json"; //Fichier JSON affichant les zones
 var Stats_JSON; //Fichier JSON affichant les stats
@@ -223,22 +229,12 @@ function lire_fichier_JSON(){
   request.send();
   request.onload = function() {
     places = request.response;
-    if (Stats_JSON != ''){
-      getStats(Stats_JSON);
+    if (Stats_JSON && Stats_JSON != ''){
+      getStats();
     }else{
-      color = ['#AAAAAA'];
-      scale = [0];
-    }
-    if (geojson){
-      MetropolitanFranceMap.removeLayer(geojson);
+      addGeojson();
     }
 
-    geojson = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
-    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
-    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
-    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
-    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
-    L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
   }
 }
 
@@ -246,11 +242,10 @@ function lire_fichier_JSON(){
 Fonction permettant de lire un fichier de statistiques de le traiter afin
 de les représenter sur la cartes.
 */
-function getStats(JSON_stats_filename){
+function getStats(){
 
-  var JSONFile = JSON_stats_filename;
   var request = new XMLHttpRequest();
-  request.open('GET', JSONFile);
+  request.open('GET', Stats_JSON);
   request.responseType = 'json';
   request.send();
   request.onload = function() {
@@ -262,8 +257,27 @@ function getStats(JSON_stats_filename){
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
     }
-
+    addGeojson();
   }
+}
+
+function addGeojson(){
+
+  if (geojsonMetropole){
+    MetropolitanFranceMap.removeLayer(geojsonMetropole);
+    GuadeloupeMap.removeLayer(geojsonGuadeloupe);
+    MartiniqueMap.removeLayer(geojsonMartinique);
+    GuyaneMap.removeLayer(geojsonGuyane);
+    ReunionMap.removeLayer(geojsonReunion);
+    MayotteMap.removeLayer(geojsonMayotte);
+  }
+
+  geojsonMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
+  geojsonGuadeloupe = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
+  geojsonMartinique = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
+  geojsonGuyane = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
+  geojsonReunion = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
+  geojsonMayotte = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
 }
 
 /*--------------------Interactivité avec la carte, design---------------------*/
@@ -272,8 +286,12 @@ function getStats(JSON_stats_filename){
 Fonction permettant de créer le style des polygones
 */
 function style(feature) {
-    return {
-        fillColor: getColor(feature.properties.stats),
+  var color = ["#AAAAAA"];
+  if(feature.properties.stats){
+    color = getColor(feature.properties.stats);
+  }
+  return {
+        fillColor: color,
         weight: 1,
         opacity: 1,
         color: 'white',
@@ -320,7 +338,12 @@ function highlightFeature(e) {
 Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
 */
 function resetHighlight(e) {
-    geojson.resetStyle(e.target);
+    geojsonMetropole.resetStyle(e.target);
+    geojsonGuadeloupe.resetStyle(e.target);
+    geojsonMartinique.resetStyle(e.target);
+    geojsonGuyane.resetStyle(e.target);
+    geojsonReunion.resetStyle(e.target);
+    geojsonMayotte.resetStyle(e.target);
     info.update();
 }
 
