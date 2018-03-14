@@ -15,33 +15,33 @@ var color = d3.scaleThreshold()
 Fonction permettant de créer le style des polygones
 */
 function style(feature) {
-    return {
-        fillColor: color(parseInt(feature.properties.id)),
-        weight: 1,
-        opacity: 1,
-        color: 'white',
-        dashArray: '3',
-        fillOpacity: 0.7
-    };
+  return {
+    fillColor: color(parseInt(feature.properties.id)),
+    weight: 1,
+    opacity: 1,
+    color: 'white',
+    dashArray: '3',
+    fillOpacity: 0.7
+  };
 }
 /*
 Surbrillance de la carte
 */
 function highlightFeature(e) {
-    var layer = e.target;
+  var layer = e.target;
 
-    layer.setStyle({
-        weight: 3,
-        color: '#000000',
-        dashArray: '',
-        fillOpacity: 0.8
-    });
+  layer.setStyle({
+    weight: 2,
+    color: '#000000',
+    dashArray: '',
+    fillOpacity: 0.8
+  });
 
-    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-        layer.bringToFront();
-    }
+  if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+      layer.bringToFront();
+  }
 
-    // info.update(layer.feature.properties);
+  // info.update(layer.feature.properties);
 }
 /*
 Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
@@ -80,7 +80,7 @@ MetropolitanFranceMap.fitBounds(MetropolitanFranceInitBounds);
 //Ajout de la couche sur les cartes
 L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(MetropolitanFranceMap);
 
-d3.text("./fonds_carte/json/testjsx.txt").then(function(data) {
+d3.text("./fonds_carte/json/com_topo_v3.json.b64").then(function(data) {
 
   var json = JSON.parse(JXG.decompress(data));
   var places = topojson.feature(json, json.objects.departements);

@@ -2,8 +2,9 @@
 function jxgcompress($filename) 
 {   
     if (file_exists($filename)) {
-        $base64 = base64_encode(gzcompress(rawurlencode(file_get_contents($filename)),9));
-        echo "var jxgcompressed = " . $base64 . ";\n";
+        $gzbin = gzcompress(rawurlencode(file_get_contents($filename)),9);
+        $base64 = base64_encode($gzbin);
+        return $base64;
     } else {
         throw new Exception("$filename not found");
     }
@@ -11,5 +12,8 @@ function jxgcompress($filename)
 ?>
 
 <?php 
-    jxgcompress("./fonds_carte/json/com-dep-reg_tout_topo_v2.json");
-?>   
+    $myjson = "./fonds_carte/json/reg_topo_v2.json";
+    $myjsoncompressed = $myjson.".b64";
+    $nbbytes = file_put_contents($myjsoncompressed, jxgcompress($myjson));
+    echo $nbbytes;
+?>
