@@ -191,10 +191,13 @@ function addLayers(){
 //Variables globales
 var geojson; //Objet GeoJSON affiché sur la carte
 var legend = L.control({position: 'bottomleft'}); //Légende
-var JSONFile; //Fichier JSON affichant les zones
+var Geometry_JSON = "./Fichiers_Geojson/Regions2016.json"; //Fichier JSON affichant les zones
+var Stats_JSON; //Fichier JSON affichant les stats
 var grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];
 var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
+var stats;
+var places;
 
 //Ensemble des balises du fichier html
 var choixRegion = document.getElementById("choixRegion");
@@ -208,21 +211,24 @@ var affichageStats = document.getElementById("affichageStats");
 
 /*------------------------Lecture d'un fichier JSON---------------------------*/
 
-var places;
 
 /*
 Fonction permettant la lecture d'un fichier JSON pour l'afficher sur la carte
 */
-function lire_fichier_JSON(JSON_filename){
+function lire_fichier_JSON(){
 
-  var JSONFile = JSON_filename;
   var request = new XMLHttpRequest();
-  request.open('GET', JSONFile);
+  request.open('GET', Geometry_JSON);
   request.responseType = 'json';
   request.send();
   request.onload = function() {
     places = request.response;
-    getStats(JSON_stats_filename);
+    if (Stats_JSON != ''){
+      getStats(Stats_JSON);
+    }else{
+      color = ['#AAAAAA'];
+      scale = [0];
+    }
     if (geojson){
       MetropolitanFranceMap.removeLayer(geojson);
     }
@@ -236,10 +242,13 @@ function lire_fichier_JSON(JSON_filename){
   }
 }
 
-var stats;
-
+/*
+Fonction permettant de lire un fichier de statistiques de le traiter afin
+de les représenter sur la cartes.
+*/
 function getStats(JSON_stats_filename){
-  var JSONFile = './test.json';
+
+  var JSONFile = JSON_stats_filename;
   var request = new XMLHttpRequest();
   request.open('GET', JSONFile);
   request.responseType = 'json';
@@ -247,11 +256,14 @@ function getStats(JSON_stats_filename){
   request.onload = function() {
     stats = request.response;
 
-    for (var i=0; i< places.features.length; i++){
-      var code_insee = places.features[i].properties.code_insee;
-      places.features[i].properties["stats"] = stats.data[code_insee];
-}
-}
+    if (stats.scale == choixZone.choixzone.value){
+      for (var i=0; i< places.features.length; i++){
+        var code_insee = places.features[i].properties.code_insee;
+        places.features[i].properties["stats"] = stats.data[code_insee];
+      }
+    }
+
+  }
 }
 
 /*--------------------Interactivité avec la carte, design---------------------*/
@@ -353,14 +365,14 @@ function restreindre_donnees(){
     choixDepartement.style.display = "block";
     choixRegion.style.display = "block";
 
-  }else if (zoomLevel < 8 ){
+  }else if (zoomLevel < 8){
     //On affiche toutes les possibilités
     choixCommune.style.display = "block";
     choixDepartement.style.display = "block";
     choixRegion.style.display = "block";
   }else{
     /*
-    On enlève la carte des région si le niveau de zoom est supérieur à 8.
+    On enlève la carte des régions si le niveau de zoom est supérieur à 8.
     On met celle des départements par défaut
     */
     if (choixZone.choixzone.value == "region"){
@@ -412,7 +424,7 @@ function showPopUp(mapObject){
   info = L.control({position: 'topright'});
 
   info.onAdd = function (MetropolitanFranceMap) {
-      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+      this._div = L.DomUtil.create('div', 'info'); // Création d'une div de classe INFO
       this.update();
       return this._div;
   };
@@ -435,32 +447,35 @@ Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle éche
 */
 function choisir_zone() {
   if (choixZone.choixzone.value == "region"){
-    JSONFile = "./Fichiers_Geojson/Regions2016.json";
+    Geometry_JSON = "./Fichiers_Geojson/Regions2016.json";
     grades = [10, 20, 30, 40, 50, 60, 70];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
 }
   else if (choixZone.choixzone.value == "departement") {
-    JSONFile = "./Fichiers_Geojson/Departements2016.json";
+    Geometry_JSON = "./Fichiers_Geojson/Departements2016.json";
     grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
   else if (choixZone.choixzone.value == "commune") {
-    JSONFile = "./Fichiers_Geojson/comm_carto_wgs84.json";
+    Geometry_JSON = "./Fichiers_Geojson/comm_carto_wgs84.json";
     grades = [10000, 20000, 30000];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
   else {
-    JSONFile = "./Fichiers_Geojson/Regions2016.json";
+    Geometry_JSON = "./Fichiers_Geojson/Regions2016.json";
     grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];;
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
+
+  showLegend(grades);
+  lire_fichier_JSON();
 }
 
 /*
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad(){
-  lire_fichier_JSON("./Fichiers_Geojson/Departements2016.json");
+  lire_fichier_JSON();
   showLegend(grades);
 }
 
@@ -475,8 +490,4 @@ disableMovingInOverseasMaps();
 addLayers();
 showPopUp(MetropolitanFranceMap);
 
-var stats;
-
-
-
-JSON_stats_filename = 'test.json';
+Stats_JSON = './Fichiers_Stats/Stat_A1202/Stat_A1202__Scale_Reg.json';
