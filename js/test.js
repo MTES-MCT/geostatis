@@ -70,7 +70,8 @@ var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
   zoomSnap: 0.25,
   minZoom:5,
   attributionControl: false,
-  maxBounds:MetropolitanFranceMaxBounds
+  maxBounds:MetropolitanFranceMaxBounds,
+  renderer: L.canvas()
 });
 var geojson;
 
@@ -80,10 +81,12 @@ MetropolitanFranceMap.fitBounds(MetropolitanFranceInitBounds);
 //Ajout de la couche sur les cartes
 L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(MetropolitanFranceMap);
 
-d3.text("./fonds_carte/json/com_topo_v3.json.b64").then(function(data) {
+
+var fonds_json_dir = "./fonds_carte/json/";
+d3.text(fonds_json_dir + "com_topo_v2.json.b64").then(function(data) {
 
   var json = JSON.parse(JXG.decompress(data));
-  var places = topojson.feature(json, json.objects.departements);
+  var places = topojson.feature(json, json.objects.communes);
 
   geojson = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
 });
