@@ -12,7 +12,7 @@ function jxgcompress($filename)
 ?>
 
 <?php 
-    $myjson = "./fonds_carte/json/reg_topo_v2.json";
+    $myjson = "./fonds_carte/json/regions.json";
     $myjsoncompressed = $myjson.".b64";
     $nbbytes = file_put_contents($myjsoncompressed, jxgcompress($myjson));
     echo $nbbytes;

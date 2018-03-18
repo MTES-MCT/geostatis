@@ -83,8 +83,9 @@ L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(
 
 
 var fonds_json_dir = "./fonds_carte/json/";
-d3.text(fonds_json_dir + "com_topo_v2.json.b64").then(function(data) {
+d3.text(fonds_json_dir + "communes.json.b64").then(function(data) {
 
+  console.log(JXG.decompress(data));
   var json = JSON.parse(JXG.decompress(data));
   var places = topojson.feature(json, json.objects.communes);
 
