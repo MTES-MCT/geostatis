@@ -55,6 +55,7 @@ var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
       zoom: 5,
       zoomSnap: 0.25,
       minZoom:5,
+      maxZoom:15,
       attributionControl: false,
       maxBounds:MetropolitanFranceMaxBounds
   });
@@ -188,6 +189,23 @@ function addLayers(){
 
 /*-------------------------------Variables globales---------------------------*/
 
+//Ensemble des balises du fichier html
+var choixRegion = document.getElementById("choixRegion");
+var choixDepartement = document.getElementById("choixDepartement");
+var choixCommune = document.getElementById("choixCommune");
+var choixZone = document.getElementById("choixZone");
+var region = document.getElementById("region");
+var departement = document.getElementById("departement");
+var commune = document.getElementById("commune");
+var affichageStats = document.getElementById("affichageStats");
+var choose_mode = document.getElementById("choose_mode");
+var choose_color_palette = document.getElementById("choose_color_palette");
+var statAffichee = document.getElementById("statAffichee");
+var titreStat = document.getElementById("titreStat");
+var metadonneesStat = document.getElementById("metadonneesStat");
+var numberOfRange = document.getElementById("numberOfRange");
+var showNumberOfRange = document.getElementById("showNumberOfRange");
+showNumberOfRange.innerHTML = numberOfRange.value;
 //Variables globales
 var geojsonMetropole; //Objet GeoJSON affiché sur la carte
 var geojsonGuadeloupe;
@@ -204,16 +222,9 @@ var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED9
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var stats;
 var places;
-
-//Ensemble des balises du fichier html
-var choixRegion = document.getElementById("choixRegion");
-var choixDepartement = document.getElementById("choixDepartement");
-var choixCommune = document.getElementById("choixCommune");
-var choixZone = document.getElementById("choixZone");
-var region = document.getElementById("region");
-var departement = document.getElementById("departement");
-var commune = document.getElementById("commune");
-var affichageStats = document.getElementById("affichageStats");
+var valeurs;
+var mode = choose_mode.value;
+var color_palette = choose_color_palette.value;
 
 /*------------------------Lecture d'un fichier JSON---------------------------*/
 
@@ -244,6 +255,7 @@ de les représenter sur la cartes.
 */
 function getStats(){
 
+  valeurs = [];
   var request = new XMLHttpRequest();
   request.open('GET', Stats_JSON);
   request.responseType = 'json';
@@ -254,10 +266,13 @@ function getStats(){
     if (stats.scale == choixZone.choixzone.value){
       for (var i=0; i< places.features.length; i++){
         var code_insee = places.features[i].properties.code_insee;
+        valeurs.push(stats.data[code_insee]);
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
     }
     addGeojson();
+    getStatTitle();
+
   }
 }
 
@@ -502,6 +517,51 @@ function onLoad(){
   showLegend(grades);
 }
 
+
+
+/*
+Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
+*/
+function updateMode(){
+  mode = choose_mode.value;
+}
+
+/*
+Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
+*/
+function updateColorPalette(){
+  color_palette = choose_color_palette.value;
+}
+
+function getStatTitle(){
+  titreStat.innerHTML = stats.title;
+}
+
+var valueNumberOfRange;
+function getNumberOfRange(){
+  var tempNumberOfRange = parseInt(numberOfRange.value);
+  if (isNaN(tempNumberOfRange)) {
+    tempNumberOfRange = 5;
+  }
+  showNumberOfRange.innerHTML = tempNumberOfRange;
+  valueNumberOfRange = tempNumberOfRange;
+}
+
+function getGrades(){
+  grades = [];
+  var minStats = Math.min.apply(Math, valeurs);
+  var maxStats = Math.max.apply(Math, valeurs);
+  var size = (maxStats-minStats)/valueNumberOfRange;
+  var tempGrades = minStats;
+
+  for (var i=0;i<valueNumberOfRange;i++){
+
+    grades.push(tempGrades);
+    tempGrades += size;
+  }
+}
+
+
 /*------------------------Appel aux différentes fonctions---------------------*/
 
 window.onload = onLoad;
@@ -512,5 +572,9 @@ zoomWithBounds();
 disableMovingInOverseasMaps();
 addLayers();
 showPopUp(MetropolitanFranceMap);
+
+choose_mode.addEventListener("change",updateMode);
+choose_color_palette.addEventListener("change",updateColorPalette);
+numberOfRange.addEventListener("change",getNumberOfRange);
 
 Stats_JSON = './Fichiers_Stats/Stat_A1202/Stat_A1202__Scale_Reg.json';

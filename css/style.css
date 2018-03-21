@@ -42,3 +42,17 @@
       margin: 0 0 5px;
       color: #777;
   }
+
+#parametresPersonnalisation{
+  display: flex;
+  flex-direction: row;
+}
+
+body{
+  display: flex;
+  flex-direction: row;
+}
+
+#affichageStats{
+  border: 2px solid black;
+}
