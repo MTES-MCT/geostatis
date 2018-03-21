@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Parsing TEST</title>
+  </head>
+  <body>
+    <input type="file" id="files" name="files[]" multiple />
+    <output id="content"></output>
+
+    <script>
+
+function csv_process(csv_string){
+  var result_str="";
+  var csv_array_of_lines = csv_string.split("\n");
+  var json = {"data":{},"metadata":{}};
+  csv_array_of_lines.forEach(function(line){
+    if (line[0] in ["0","1","2","3","4","5","6","7","8","9"]){
+        line=line.split(";");
+        line[2]=line[2].replace("\r","");
+        json.data[line[0]]=line[2];
+      };
+    if (line[0]=="C"){
+        line=line.split(";");
+        line[2]=line[2].replace("\r","");
+        json.metadata["stat_name"]=line[2];
+        json.metadata["scale"]=line[1];
+      };
+    if (line[0]=="U"){
+        line=line.split(";");
+        line=line[0].split(":");
+        json.metadata["unit_name"]=line[1];
+      };
+  });
+  return json;
+  }
+
+
+if (window.File && window.FileReader && window.FileList && window.Blob) {
+
+function handleFileSelect(evt) {
+
+  var csv_file=evt.target.files[0];
+  var json_name=csv_file.name.replace(".csv",".json");
+  var reader = new FileReader();
+    reader.onload = function(){
+      var csv_string = reader.result;
+      var json= csv_process(csv_string);
+      var json_str = JSON.stringify(json, null, '');
+      console.log(json_str);
+
+      var http = new XMLHttpRequest();
+      var url = "jsoncreator.php";
+      var params = "json="+json_str+"&json_name="+json_name;
+      http.open("POST", url, true);
+      http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      http.onreadystatechange = function() {
+        if(http.readyState == 4 && http.status == 200) {
+          alert("Le fichier json a été créé");
+        }
+      }
+      http.send(params);
+
+    };
+  reader.readAsText(csv_file);
+
+}
+
+document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+} else {
+alert('The File APIs are not fully supported in this browser.');
+}
+
+    </script>
+  </body>
+</html>
