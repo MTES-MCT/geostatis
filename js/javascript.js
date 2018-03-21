@@ -56,7 +56,8 @@ var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
   zoomSnap: 0.25,
   minZoom:5,
   attributionControl: false,
-  maxBounds:MetropolitanFranceMaxBounds
+  maxBounds:MetropolitanFranceMaxBounds,
+  renderer: L.canvas()
 });
 
 /*
@@ -188,12 +189,12 @@ function addLayers() {
 /*-------------------------------Variables globales---------------------------*/
 
 //Variables globales
-var geojsonMetropole; //Objet GeoJSON affiché sur la carte
-var geojsonGuadeloupe;
-var geojsonMartinique;
-var geojsonGuyane;
-var geojsonReunion;
-var geojsonMayotte;
+var layerMetropole; //Objet GeoJSON affiché sur la carte
+var layerGuadeloupe;
+var layerMartinique;
+var layerGuyane;
+var layerReunion;
+var layerMayotte;
 
 var legend = L.control({position: 'bottomleft'}); //Légende
 var Geometry_JSON = "regions"; //Fichier JSON affichant les zones
@@ -203,6 +204,7 @@ var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED9
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var stats;
 var places;
+var placesDROM;
 
 //Ensemble des balises du fichier html
 var choixRegion = document.getElementById("choixRegion");
@@ -226,11 +228,12 @@ function lire_fichier_JSON() {
   d3.text(filename).then(function(data) {
     var json = JSON.parse(LZString.decompressFromUTF16(data));
     places = topojson.feature(json, json.objects[Geometry_JSON]);
+    placesDROM = topojson.feature(json, json.objects[Geometry_JSON + "DROM"]);
 
     if (Stats_JSON && Stats_JSON != '') {
       getStats();
     } else {
-      addGeojson();
+      addGeojsonLayers();
     }
   });
 }
@@ -241,40 +244,38 @@ de les représenter sur la cartes.
 */
 function getStats() {
 
-  var request = new XMLHttpRequest();
-  request.open('GET', Stats_JSON);
-  request.responseType = 'json';
-  request.send();
-  request.onload = function() {
-    stats = request.response;
-
+  d3.json(Stats_JSON).then(function(stats) {
     if (stats.scale == choixZone.choixzone.value) {
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
+      for (let i=0; i< placesDROM.features.length; i++) {
+        let code_insee = placesDROM.features[i].properties.id;
+        placesDROM.features[i].properties["stats"] = stats.data[code_insee];
+      }
     }
-    addGeojson();
-  }
+    addGeojsonLayers();
+  });
 }
 
-function addGeojson() {
+function addGeojsonLayers() {
 
-  if (geojsonMetropole) {
-    MetropolitanFranceMap.removeLayer(geojsonMetropole);
-    GuadeloupeMap.removeLayer(geojsonGuadeloupe);
-    MartiniqueMap.removeLayer(geojsonMartinique);
-    GuyaneMap.removeLayer(geojsonGuyane);
-    ReunionMap.removeLayer(geojsonReunion);
-    MayotteMap.removeLayer(geojsonMayotte);
+  if (layerMetropole) {
+    MetropolitanFranceMap.removeLayer(layerMetropole);
+    GuadeloupeMap.removeLayer(layerGuadeloupe);
+    MartiniqueMap.removeLayer(layerMartinique);
+    GuyaneMap.removeLayer(layerGuyane);
+    ReunionMap.removeLayer(layerReunion);
+    MayotteMap.removeLayer(layerMayotte);
   }
 
-  geojsonMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
-  geojsonGuadeloupe = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
-  geojsonMartinique = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
-  geojsonGuyane = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
-  geojsonReunion = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
-  geojsonMayotte = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
+  layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
+  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
+  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
+  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
+  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
+  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
 }
 
 /*--------------------Interactivité avec la carte, design---------------------*/
@@ -284,8 +285,10 @@ Fonction permettant d'obtenir la couleur d'un polygone
 en fonction d'une échelles de valeurs et de couleurs
  */
 var getColor = d3.scaleThreshold()
-                 .domain(d3.range(10, 70, 10))
-                 .range(d3.schemeYlOrRd[8]);
+                 .domain(grades)
+                 .range(colors);
+                 // .domain(d3.range(10, 70, 10))
+                 // .range(d3.schemeYlOrRd[8]);
 
 /*
 Fonction permettant de créer le style des polygones
@@ -329,12 +332,12 @@ function highlightFeature(e) {
 Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
 */
 function resetHighlight(e) {
-  geojsonMetropole.resetStyle(e.target);
-  geojsonGuadeloupe.resetStyle(e.target);
-  geojsonMartinique.resetStyle(e.target);
-  geojsonGuyane.resetStyle(e.target);
-  geojsonReunion.resetStyle(e.target);
-  geojsonMayotte.resetStyle(e.target);
+  layerMetropole.resetStyle(e.target);
+  layerGuadeloupe.resetStyle(e.target);
+  layerMartinique.resetStyle(e.target);
+  layerGuyane.resetStyle(e.target);
+  layerReunion.resetStyle(e.target);
+  layerMayotte.resetStyle(e.target);
   info.update();
 }
 
@@ -408,9 +411,9 @@ function createLegend() {
 
   // loop through our density intervals and generate a label with a colored square for each interval
   for (var i = 0; i < grades.length; i++) {
-      div.innerHTML +=
-          '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-          grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    div.innerHTML +=
+        '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+        grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
   }
 
   return div;
@@ -438,16 +441,16 @@ function showPopUp(mapObject) {
   info = L.control({position: 'topright'});
 
   info.onAdd = function (MetropolitanFranceMap) {
-      this._div = L.DomUtil.create('div', 'info'); // Création d'une div de classe INFO
-      this.update();
-      return this._div;
+    this._div = L.DomUtil.create('div', 'info'); // Création d'une div de classe INFO
+    this.update();
+    return this._div;
   };
 
   // method that we will use to update the control based on feature properties passed
   info.update = function (properties) {
-      this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
-          '<b>' + properties.nom + '</b><br />' + properties.code_insee + '</b><br />' + properties.stats
-          : 'Survoler une région');
+    this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
+        '<b>' + properties.nom + '</b><br />' + properties.id + '</b><br />' + properties.stats
+        : 'Survoler une région');
   };
 
   info.addTo(mapObject); //Ajout de l'objet sur la carte
@@ -467,7 +470,7 @@ function choisir_zone() {
   }
   else if (choixZone.choixzone.value == "commune") {
     Geometry_JSON = "communes";
-    grades = [10000, 20000, 30000];
+    grades = [10000, 20000, 30000, 40000, 50000, 60000, 70000];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   } 
   else {
