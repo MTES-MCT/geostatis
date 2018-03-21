@@ -189,15 +189,17 @@ function addLayers() {
 /*-------------------------------Variables globales---------------------------*/
 
 //Variables globales
-var layerMetropole; //Objet GeoJSON affiché sur la carte
+var layerMetropole; //Objet layer GeoJSON affiché sur la carte
 var layerGuadeloupe;
 var layerMartinique;
 var layerGuyane;
 var layerReunion;
 var layerMayotte;
 
+var topoJSONByScale = {};
+
 var legend = L.control({position: 'bottomleft'}); //Légende
-var Geometry_JSON = "regions"; //Fichier JSON affichant les zones
+var Geometry_JSON_scale = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
 var Stats_JSON; //Fichier JSON affichant les stats
 var grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];
 var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
@@ -224,18 +226,24 @@ Fonction permettant la lecture d'un fichier JSON pour l'afficher sur la carte
 */
 function lire_fichier_JSON() {
 
-  var filename = "./fonds_carte/json/" + Geometry_JSON + ".json.txt";
-  d3.text(filename).then(function(data) {
-    var json = JSON.parse(LZString.decompressFromUTF16(data));
-    places = topojson.feature(json, json.objects[Geometry_JSON]);
-    placesDROM = topojson.feature(json, json.objects[Geometry_JSON + "DROM"]);
+  var json = topoJSONByScale[Geometry_JSON_scale];
+  places = topojson.feature(json, json.objects[Geometry_JSON_scale]);
+  placesDROM = topojson.feature(json, json.objects[Geometry_JSON_scale + "DROM"]);
 
-    if (Stats_JSON && Stats_JSON != '') {
-      getStats();
-    } else {
-      addGeojsonLayers();
-    }
+  if (Stats_JSON && Stats_JSON != '') {
+    getStats();
+  } else {
+    addGeojsonLayers();
+  }
+}
+
+function load_fichier_topoJSON(scale = Geometry_JSON_scale) {
+
+  var filename = "./fonds_carte/json/" + scale + ".json.txt";
+  var promesse = d3.text(filename).then(function(data) {
+    topoJSONByScale[scale] = JSON.parse(LZString.decompressFromUTF16(data));
   });
+  return promesse;
 }
 
 /*
@@ -464,17 +472,17 @@ Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle éche
 */
 function choisir_zone() {
   if (choixZone.choixzone.value == "departement") {
-    Geometry_JSON = "departements";
+    Geometry_JSON_scale = "departements";
     grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
   else if (choixZone.choixzone.value == "commune") {
-    Geometry_JSON = "communes";
+    Geometry_JSON_scale = "communes";
     grades = [10000, 20000, 30000, 40000, 50000, 60000, 70000];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   } 
   else {
-    Geometry_JSON = "regions";
+    Geometry_JSON_scale = "regions";
     grades = [10, 20, 30, 40, 50, 60, 70];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
   }
@@ -487,8 +495,9 @@ function choisir_zone() {
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
-  lire_fichier_JSON();
+  load_fichier_topoJSON().then(lire_fichier_JSON);
   showLegend(grades);
+  load_fichier_topoJSON("departements").then(load_fichier_topoJSON("communes"));
 }
 
 /*------------------------Appel aux différentes fonctions---------------------*/
