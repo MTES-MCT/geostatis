@@ -278,7 +278,33 @@ function addGeojsonLayers() {
     MayotteMap.removeLayer(layerMayotte);
   }
 
-  layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
+  layerMetropole = L.vectorGrid.slicer(places,{
+    vectorTileLayerName: 'metropole',
+    rendererFactory: L.svg.tile,
+    interactive: true,
+    getFeatureId: function(f) {
+        return f.properties.id;
+    },
+    vectorTileLayerStyles: {metropole: gridStyle}, 
+    // onEachFeature: onEachFeature
+  })
+  .on('mouseover', function(e) {
+    console.log(e.layer.properties.nom);
+    var style = {
+      weight: 3,
+      // color: '#000000',
+      dashArray: ''
+    };
+    // layerMetropole.setFeatureStyle(e.layer.properties.id, style);
+    info.update(e.layer.properties);
+  })
+  .on('mouseout', function(e) {
+    console.log(e.layer.properties.nom);
+    // layerMetropole.resetFeatureStyle(e.layer.properties.id);
+    info.update();
+  })
+  .addTo(MetropolitanFranceMap);
+  // layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
   layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
   layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
   layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
@@ -312,8 +338,12 @@ function style(feature) {
     opacity: 1,
     color: 'white',
     dashArray: '3',
-    fillOpacity: 0.7
+    fillOpacity: 0.7,
+    fill: true
   };
+}
+function gridStyle(properties) {
+  return style({properties:properties});
 }
 
 /*
@@ -340,7 +370,7 @@ function highlightFeature(e) {
 Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
 */
 function resetHighlight(e) {
-  layerMetropole.resetStyle(e.target);
+  // layerMetropole.resetFeatureStyle(e.target);
   layerGuadeloupe.resetStyle(e.target);
   layerMartinique.resetStyle(e.target);
   layerGuyane.resetStyle(e.target);
