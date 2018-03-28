@@ -501,7 +501,7 @@ function choisir_zone() {
     Geometry_JSON_scale = "communes";
     grades = [10000, 20000, 30000, 40000, 50000, 60000, 70000];
     colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED976','#FFEDA0'];
-  } 
+  }
   else {
     Geometry_JSON_scale = "regions";
     grades = [10, 20, 30, 40, 50, 60, 70];
@@ -572,6 +572,37 @@ function getGrades(){
   console.log(grades);
 }
 
+/*
+Fonction permettant d'obtenir le centroide d'un array de pojnts
+*/
+function getCentroid(polygone){
+    var arr= polygone.toGeoJSON();
+
+    var twoTimesSignedArea = 0;
+    var cxTimes6SignedArea = 0;
+    var cyTimes6SignedArea = 0;
+
+    var length = arr.length
+
+    var x = function (i) { return arr[i % length][0] };
+    var y = function (i) { return arr[i % length][1] };
+
+    for ( var i = 0; i < arr.length; i++) {
+        var twoSA = x(i)*y(i+1) - x(i+1)*y(i);
+        twoTimesSignedArea += twoSA;
+        cxTimes6SignedArea += (x(i) + x(i+1)) * twoSA;
+        cyTimes6SignedArea += (y(i) + y(i+1)) * twoSA;
+    }
+    var sixSignedArea = 3 * twoTimesSignedArea;
+    return [ cxTimes6SignedArea / sixSignedArea, cyTimes6SignedArea / sixSignedArea];
+}
+
+/*
+Fonction permettant de déterminer la valeur statistique la plus forte parmi tous les polygones
+*/
+function getMaxStatValue(){
+  for (let i=0; i< places.features.length; i++) {}
+}
 
 /*------------------------Appel aux différentes fonctions---------------------*/
 
