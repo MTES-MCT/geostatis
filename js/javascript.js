@@ -51,13 +51,14 @@ Il est possible de zoomer avec un pas de 0.25
 On ne peut pas sortir de la France avec maxBounds
 */
 var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
-  center: [46.6033540, 1.8883335],
-  zoom: 5,
-  zoomSnap: 0.25,
-  minZoom:5,
-  attributionControl: false,
-  maxBounds:MetropolitanFranceMaxBounds,
-  renderer: L.canvas()
+	center: [46.6033540, 1.8883335],
+	zoom: 5,
+	zoomSnap: 0.25,
+	minZoom:5,
+	maxZoom:15,
+	attributionControl: false,
+	maxBounds:MetropolitanFranceMaxBounds
+	renderer: L.canvas()
 });
 
 /*
@@ -188,6 +189,23 @@ function addLayers() {
 
 /*-------------------------------Variables globales---------------------------*/
 
+//Ensemble des balises du fichier html
+var choixRegion = document.getElementById("choixRegion");
+var choixDepartement = document.getElementById("choixDepartement");
+var choixCommune = document.getElementById("choixCommune");
+var choixZone = document.getElementById("choixZone");
+var region = document.getElementById("region");
+var departement = document.getElementById("departement");
+var commune = document.getElementById("commune");
+var affichageStats = document.getElementById("affichageStats");
+var choose_mode = document.getElementById("choose_mode");
+var choose_color_palette = document.getElementById("choose_color_palette");
+var statAffichee = document.getElementById("statAffichee");
+var titreStat = document.getElementById("titreStat");
+var metadonneesStat = document.getElementById("metadonneesStat");
+var numberOfRange = document.getElementById("numberOfRange");
+var showNumberOfRange = document.getElementById("showNumberOfRange");
+showNumberOfRange.innerHTML = numberOfRange.value;
 //Variables globales
 var layerMetropole; //Objet layer GeoJSON affiché sur la carte
 var layerGuadeloupe;
@@ -206,17 +224,9 @@ var colors = ['#800026','#BD0026','#E31A1C','#FC4E2A','#FD8D3C','#FEB24C','#FED9
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var stats;
 var places;
-var placesDROM;
-
-//Ensemble des balises du fichier html
-var choixRegion = document.getElementById("choixRegion");
-var choixDepartement = document.getElementById("choixDepartement");
-var choixCommune = document.getElementById("choixCommune");
-var choixZone = document.getElementById("choixZone");
-var region = document.getElementById("region");
-var departement = document.getElementById("departement");
-var commune = document.getElementById("commune");
-var affichageStats = document.getElementById("affichageStats");
+var valeurs;
+var mode = choose_mode.value;
+var color_palette = choose_color_palette.value;
 
 /*------------------------Lecture d'un fichier JSON---------------------------*/
 
@@ -330,7 +340,7 @@ Fonction permettant de créer le style des polygones
 function style(feature) {
   var color = ["#AAAAAA"];
   if (feature.properties.stats) {
-    color = getColor(parseInt(feature.properties.stats));
+    color = getColor(feature.properties.stats);
   }
   return {
     fillColor: color,
@@ -442,6 +452,14 @@ function restreindre_donnees() {
   }
 }
 
+/*
+Fonction permettant d'arrondir un nombre avec un precision définie
+*/
+function precisionRound(number, precision) {
+  var factor = Math.pow(10, precision);
+  return Math.round(number * factor) / factor;
+}
+
 //Fonction permettant de créer la syntaxe HTML pour la légende
 function createLegend() {
   var div = L.DomUtil.create('div', 'info legend'),
@@ -451,7 +469,7 @@ function createLegend() {
   for (var i = 0; i < grades.length; i++) {
     div.innerHTML +=
         '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-        grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+        precisionRound(grades[i], 2) + (precisionRound(grades[i + 1], 2) ? '&ndash;' + precisionRound(grades[i + 1], 2) + '<br>' : '+');
   }
 
   return div;
@@ -530,6 +548,58 @@ function onLoad() {
   load_fichier_topoJSON("departements").then(load_fichier_topoJSON("communes"));
 }
 
+
+/*
+Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
+*/
+function updateMode(){
+  mode = choose_mode.value;
+}
+
+/*
+Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
+*/
+function updateColorPalette(){
+  color_palette = choose_color_palette.value;
+}
+
+function getStatTitle(){
+  titreStat.innerHTML = stats.title;
+}
+
+var valueNumberOfRange;
+function getNumberOfRange(){
+  var tempNumberOfRange = parseInt(numberOfRange.value);
+  if (isNaN(tempNumberOfRange)) {
+    tempNumberOfRange = 5;
+  }
+  showNumberOfRange.innerHTML = tempNumberOfRange;
+  valueNumberOfRange = tempNumberOfRange;
+}
+
+function updateLegend(){
+  getNumberOfRange();
+  getGrades();
+  showLegend();
+}
+
+function getGrades(){
+  grades = [];
+  var minStats = Math.min.apply(Math, valeurs);
+  var maxStats = Math.max.apply(Math, valeurs);
+  var size = (maxStats-minStats)/valueNumberOfRange;
+  var tempGrades = minStats;
+
+  for (var i=0;i<valueNumberOfRange;i++){
+
+    grades.push(tempGrades);
+    tempGrades += size;
+  }
+
+  console.log(grades);
+}
+
+
 /*------------------------Appel aux différentes fonctions---------------------*/
 
 window.onload = onLoad;
@@ -540,5 +610,9 @@ zoomWithBounds();
 disableMovingInOverseasMaps();
 addLayers();
 showPopUp(MetropolitanFranceMap);
+
+choose_mode.addEventListener("change",updateMode);
+choose_color_palette.addEventListener("change",updateColorPalette);
+numberOfRange.addEventListener("change",updateLegend);
 
 Stats_JSON = './Fichiers_Stats/Stat_A1202/Stat_A1202__Scale_Reg.json';
