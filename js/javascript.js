@@ -57,7 +57,7 @@ var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
 	minZoom:5,
 	maxZoom:15,
 	attributionControl: false,
-	maxBounds:MetropolitanFranceMaxBounds
+	maxBounds:MetropolitanFranceMaxBounds,
 	renderer: L.canvas()
 });
 
@@ -215,6 +215,7 @@ var layerReunion;
 var layerMayotte;
 
 var topoJSONByScale = {};
+var highlightedFeatureId;
 
 var legend = L.control({position: 'bottomleft'}); //Légende
 var Geometry_JSON_scale = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
@@ -262,14 +263,17 @@ de les représenter sur la cartes.
 */
 function getStats() {
 
+  valeurs = [];
   d3.json(Stats_JSON).then(function(stats) {
     if (stats.scale == choixZone.choixzone.value) {
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
+        valeurs.push(stats.data[code_insee]);
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
       for (let i=0; i< placesDROM.features.length; i++) {
         let code_insee = placesDROM.features[i].properties.id;
+        valeurs.push(stats.data[code_insee]);
         placesDROM.features[i].properties["stats"] = stats.data[code_insee];
       }
     }
@@ -299,19 +303,16 @@ function addGeojsonLayers() {
     // onEachFeature: onEachFeature
   })
   .on('mouseover', function(e) {
-    console.log(e.layer.properties.nom);
-    var style = {
-      weight: 3,
-      // color: '#000000',
-      dashArray: ''
-    };
-    // layerMetropole.setFeatureStyle(e.layer.properties.id, style);
-    info.update(e.layer.properties);
-  })
-  .on('mouseout', function(e) {
-    console.log(e.layer.properties.nom);
-    // layerMetropole.resetFeatureStyle(e.layer.properties.id);
-    info.update();
+    if (e.layer.properties.id != highlightedFeatureId || !highlightedFeatureId) {
+      if (highlightedFeatureId) {
+        layerMetropole.resetFeatureStyle(highlightedFeatureId);
+      }
+      highlightedFeatureId = e.layer.properties.id;
+      var style = gridStyle(e.layer.properties);
+      style.weight = 3;
+      layerMetropole.setFeatureStyle(e.layer.properties.id, style);
+      info.update(e.layer.properties);
+    }
   })
   .addTo(MetropolitanFranceMap);
   // layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
