@@ -262,14 +262,17 @@ de les représenter sur la cartes.
 */
 function getStats() {
 
+  valeurs = [];
   d3.json(Stats_JSON).then(function(stats) {
     if (stats.scale == choixZone.choixzone.value) {
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
+        valeurs.push(stats.data[code_insee]);
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
       for (let i=0; i< placesDROM.features.length; i++) {
         let code_insee = placesDROM.features[i].properties.id;
+        valeurs.push(stats.data[code_insee]);
         placesDROM.features[i].properties["stats"] = stats.data[code_insee];
       }
     }
