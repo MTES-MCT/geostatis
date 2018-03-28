@@ -425,6 +425,14 @@ function restreindre_donnees(){
     }
 }
 
+/*
+Fonction permettant d'arrondir un nombre avec un precision définie
+*/
+function precisionRound(number, precision) {
+  var factor = Math.pow(10, precision);
+  return Math.round(number * factor) / factor;
+}
+
 //Fonction permettant de créer la syntaxe HTML pour la légende
 function createLegend(){
   var div = L.DomUtil.create('div', 'info legend'),
@@ -434,7 +442,7 @@ function createLegend(){
   for (var i = 0; i < grades.length; i++) {
       div.innerHTML +=
           '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-          grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+          precisionRound(grades[i], 2) + (precisionRound(grades[i + 1], 2) ? '&ndash;' + precisionRound(grades[i + 1], 2) + '<br>' : '+');
   }
 
   return div;
@@ -518,7 +526,6 @@ function onLoad(){
 }
 
 
-
 /*
 Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
 */
@@ -547,6 +554,12 @@ function getNumberOfRange(){
   valueNumberOfRange = tempNumberOfRange;
 }
 
+function updateLegend(){
+  getNumberOfRange();
+  getGrades();
+  showLegend();
+}
+
 function getGrades(){
   grades = [];
   var minStats = Math.min.apply(Math, valeurs);
@@ -559,6 +572,8 @@ function getGrades(){
     grades.push(tempGrades);
     tempGrades += size;
   }
+
+  console.log(grades);
 }
 
 
@@ -575,6 +590,6 @@ showPopUp(MetropolitanFranceMap);
 
 choose_mode.addEventListener("change",updateMode);
 choose_color_palette.addEventListener("change",updateColorPalette);
-numberOfRange.addEventListener("change",getNumberOfRange);
+numberOfRange.addEventListener("change",updateLegend);
 
 Stats_JSON = './Fichiers_Stats/Stat_A1202/Stat_A1202__Scale_Reg.json';
