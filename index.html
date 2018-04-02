@@ -8,67 +8,81 @@
 		<script src="https://unpkg.com/topojson-client@3"></script>
     	<script src='https://d3js.org/d3.v5.min.js'></script>
     	<script src="js/lz-string.min.js"></script>
+    	<script src="js/Leaflet.VectorGrid.bundled.min.js"></script>
     	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
+			<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"/>
+			<link rel="stylesheet" href="css/leaflet.zoomhome.css"/>
+			<script src="js/leaflet.zoomhome.min.js"></script>
+			<script src="js/leaflet.zoomhome.js"></script>
+			<link rel="stylesheet" href="css/cssMenuDeroulant.css"/>
 		<link rel="stylesheet" href="css/style.css"/>
 	</head>
 
 	<body>
-		<div id="test">
+		<div id="Maps_parametresPersonnalisation">
 
-		<div id="allMaps">
-			<div id="MetropolitanFranceMap"></div>
-			<div id="Overseas_Maps">
-				<div id="GuadeloupeMap" class="DROM_Maps"></div>
-				<div id="MartiniqueMap" class="DROM_Maps"></div>
-				<div id="GuyaneMap" class="DROM_Maps"></div>
-				<div id="ReunionMap" class="DROM_Maps"></div>
-				<div id="MayotteMap" class="DROM_Maps"></div>
+			<div id="allMaps">
+				<div id="MetropolitanFranceMap"></div>
+				<div id="Overseas_Maps">
+					<div id="GuadeloupeMap" class="DROM_Maps"></div>
+					<div id="MartiniqueMap" class="DROM_Maps"></div>
+					<div id="GuyaneMap" class="DROM_Maps"></div>
+					<div id="ReunionMap" class="DROM_Maps"></div>
+					<div id="MayotteMap" class="DROM_Maps"></div>
+				</div>
+			</div>
+
+			<div id="parametresPersonnalisation">
+				<form id="menuChoixZone" class="menuChoix">
+					<div>Couche administrative</div>
+					<div id="choixRegion">
+						<input type="radio" id="region" name="choixzone" value="region" checked>
+						<label for="region">Régions</label>
+					</div>
+					<div id="choixDepartement">
+						<input type="radio" id="departement" name="choixzone" value="departement">
+						<label for="departement">Départements</label>
+					</div>
+					<div id="choixCommune" style="display: none;">
+						<input type="radio" id="commune" name="choixzone" value="commune">
+						<label for="commune">Communes</label>
+					</div>
+				</form>
+
+				<div id="menuChoixMode" class="menuChoix">
+					<div class="titreMenu">Mode</div>
+				<select id="choose_mode" class="menu_deroulant">
+					<option selected value="intervallesEgaux">Intervalles égaux</option>
+					<option value="effectifsEgaux">Effectifs égaux</option>
+					<option value="ecartType">Écart-type</option>
+					<option value="rupturesNaturelles">Ruptures naturelles</option>
+				</select>
+				</div>
+
+			<div id="menuChoixPaletteCouleur" class="menuChoix">
+				<div class="titreMenu">Échelle de couleur</div>
+			<select id="choose_color_palette" class="menu_deroulant">
+					<option selected>Classique</option>
+					<option>Dégradé vert</option>
+					<option>Dégradé bleu</option>
+					<option>Dégradé rouge</option>
+				</select>
+			</div>
+
+			<div id="menuChoixNombreClasses" class="menuChoix">
+				<div class="titreMenu">Nombre de classes</div>
+				<input type="range" id="numberOfRange" class="slider" min=2 max=10 step=1>
+				<div id="showNumberOfRange"></div>
 			</div>
 		</div>
-
-		<div id="parametresPersonnalisation">
-			<form id="choixZone">
-				Veuillez choisir votre couche administrative :
-				<div id="choixRegion">
-					<input type="radio" id="region" name="choixzone" value="region" checked>
-					<label for="region">Régions</label>
-				</div>
-				<div id="choixDepartement">
-					<input type="radio" id="departement" name="choixzone" value="departement">
-					<label for="departement">Départements</label>
-				</div>
-				<div id="choixCommune">
-					<input type="radio" id="commune" name="choixzone" value="commune">
-					<label for="commune">Communes</label>
-				</div>
-			</form>
-
-			<select id="choose_mode" class="menu_deroulant">
-				<option selected>Intervalles égaux</option>
-				<option>Effectifs égaux</option>
-				<option>Écart-type</option>
-				<option>Ruptures naturelles</option>
-			</select>
-
-			<select id="choose_color_palette" class="menu_deroulant">
-				<option selected>1</option>
-				<option>2</option>
-				<option>3</option>
-				<option>4</option>
-			</select>
-
-			<input type="range" id="numberOfRange" min=2 max=10 step=1>
-			<div id="showNumberOfRange"></div>
 		</div>
-
 
 		<div id="affichageStats">
 	    	<div id="statAffichee">Statistique affichée</div>
-	    	<div id="titreStat"></div>
-	    	<div id="metadonneesStat">
-	    </div>
+	    	<div id="metadonneesStat"></div>
 
-    	</div>
+    </div>
+
 		<script src="js/javascript.js"></script>
 	</body>
 </html>
