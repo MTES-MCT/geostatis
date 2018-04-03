@@ -223,7 +223,7 @@ var Geometry_JSON_scale = "regions"; //Nom de l'échelle pour les fichiers de zo
 var scale = L.control.scale({imperial:false, position: 'bottomright'}); //Échelle
 var Stats_JSON; //Fichier JSON affichant les stats
 var grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];
-var colors = ['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'];
+var colors;
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var zoneAffichee = 'region';
 var stats;
@@ -234,6 +234,8 @@ var numeriquesValeurs; //Même tableau que valeurs mais qu'avec des nombres
 var mode = choose_mode.value;
 var color_palette = choose_color_palette.value;
 var valueNumberOfRange; //Nombre de classes
+
+var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
 
 
 /*------------------------Lecture d'un fichier JSON---------------------------*/
@@ -246,6 +248,8 @@ function lire_fichier_JSON() {
   var json = topoJSONByScale[Geometry_JSON_scale];
   places = topojson.feature(json, json.objects[Geometry_JSON_scale]);
   placesDROM = topojson.feature(json, json.objects[Geometry_JSON_scale + "DROM"]);
+
+  getStatsJSONFile(); //Obtention du chemin du fichier
 
   if (Stats_JSON && Stats_JSON != '') {
     getStats();
@@ -269,10 +273,12 @@ function load_fichier_topoJSON(scale = Geometry_JSON_scale) {
 /*------------------------Gestion des statistiques----------------------------*/
 
 /*
-Fonction pour permettre d'afficher les métadoonées de la statistique
+Fonction pour permettre d'afficher les métadonnées de la statistique
 */
 function showStatMetadata(){
+  if (statsMetadata){
   metadonneesStat.innerHTML = statsMetadata.stat_name;
+  }
 }
 
 /*
@@ -287,6 +293,15 @@ function getNumericArray(array){
     }
   }
   return newArray;
+}
+
+/*
+Fonction permettant de récupérer le chemin du fichier voulu
+*/
+function getStatsJSONFile(){
+  Stats_JSON = "./fichiers_stats/"
+  Stats_JSON += "export_part-inscrits-formations-env.json";
+
 }
 
 /*
@@ -372,23 +387,25 @@ en fonction du niveau de zoom
 function restreindre_donnees() {
   var zoomLevel = MetropolitanFranceMap.getZoom();
 
-  //Interdiction de l'accès aux communes
-  if (zoomLevel < 7) {
-    /*
-    On enlève la carte des communes si le niveau de zoom est inférieur à 7.
-    On met celle des départements par défaut
-    */
-    if (choixZone.choixzone.value == "commune") {
-      departement.checked = true;
-      montrer_zone();
-    }
+  // //Interdiction de l'accès aux communes
+  // if (zoomLevel < 7) {
+  //   /*
+  //   On enlève la carte des communes si le niveau de zoom est inférieur à 7.
+  //   On met celle des départements par défaut
+  //   */
+  //   if (choixZone.choixzone.value == "commune") {
+  //     departement.checked = true;
+  //     montrer_zone();
+  //   }
+  //
+  //   //On cache la case des communes
+  //   choixCommune.style.display = "none";
+  //   choixDepartement.style.display = "block";
+  //   choixRegion.style.display = "block";
+  //
+  // } else if (zoomLevel < 8) {
 
-    //On cache la case des communes
-    choixCommune.style.display = "none";
-    choixDepartement.style.display = "block";
-    choixRegion.style.display = "block";
-
-  } else if (zoomLevel < 8) {
+    if (zoomLevel < 8) {
     //On affiche toutes les possibilités
     choixCommune.style.display = "block";
     choixDepartement.style.display = "block";
@@ -460,6 +477,17 @@ function style(feature) {
   var color = ["#AAAAAA"];
   if (feature.properties.stats) {
     color = getColor(feature.properties.stats);
+  }
+  if (choixZone.choixzone.value == "commune" && MetropolitanFranceMap.getZoom() <= 7) {
+    return {
+      fillColor: color,
+      weight: 0,
+      opacity: 1,
+      color: 'white',
+      dashArray: '3',
+      fillOpacity: 0.7,
+      fill: true
+    };
   }
   return {
     fillColor: color,
@@ -597,6 +625,16 @@ function showPopUp(mapObject) {
   info.addTo(mapObject); //Ajout de l'objet sur la carte
 }
 
+/*------------------------Sélection des palettes------------------------------*/
+
+function completeChooseColorPalette(){
+  choose_color_palette.innerHTML = "";
+
+  for (var i=0;i<Object.keys(colorPalettes).length;i++){
+    choose_color_palette.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
+  }
+}
+
 
 /*------------------------Sélection de la couche------------------------------*/
 
@@ -653,7 +691,8 @@ function updateMode(){
 Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
 */
 function updateColorPalette(){
-  color_palette = choose_color_palette.value;
+  var i = choose_color_palette.value;
+  colors = colorPalettes[i].couleurs;
 }
 
 /*
@@ -750,6 +789,8 @@ function onLoadTopoJSON(){
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
+  completeChooseColorPalette();
+  updateColorPalette();
   addScale();
   zoomButtons();
   onLoadTopoJSON();
@@ -769,5 +810,3 @@ MetropolitanFranceMap.on('zoom',restreindre_donnees);
 choose_mode.addEventListener("change",updateLegend);
 choose_color_palette.addEventListener("change",updateLegend);
 numberOfRange.addEventListener("change",updateLegend);
-
-Stats_JSON = './fichiers_stats/export_population-zone-inondable_copie.json';
