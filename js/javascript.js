@@ -215,7 +215,8 @@ var layerReunion;
 var layerMayotte;
 
 var topoJSONByScale = {};
-var highlightedFeatureId;
+var tileIndex;
+var prevGridLayer;
 
 var legend = L.control({position: 'bottomleft'}); //Légende
 var Geometry_JSON_scale = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
@@ -240,6 +241,8 @@ function lire_fichier_JSON() {
   var json = topoJSONByScale[Geometry_JSON_scale];
   places = topojson.feature(json, json.objects[Geometry_JSON_scale]);
   placesDROM = topojson.feature(json, json.objects[Geometry_JSON_scale + "DROM"]);
+
+  tileIndex = geojsonvt(places);
 
   if (Stats_JSON && Stats_JSON != '') {
     getStats();
@@ -266,11 +269,15 @@ function getStats() {
   valeurs = [];
   d3.json(Stats_JSON).then(function(stats) {
     if (stats.scale == choixZone.choixzone.value) {
-      for (let i=0; i< places.features.length; i++) {
-        let code_insee = places.features[i].properties.id;
+      places.features.forEach(function(feature, i) {
+        let code_insee = feature.properties.id;
         valeurs.push(stats.data[code_insee]);
-        places.features[i].properties["stats"] = stats.data[code_insee];
-      }
+        feature.properties["stats"] = stats.data[code_insee];
+
+        var anchor = toColor(code_insee);
+        feature.properties["_pickingColor"] = anchor.color;
+        feature.properties["_pickingColorID"] = anchor.id;
+      });
       for (let i=0; i< placesDROM.features.length; i++) {
         let code_insee = placesDROM.features[i].properties.id;
         valeurs.push(stats.data[code_insee]);
@@ -292,35 +299,145 @@ function addGeojsonLayers() {
     MayotteMap.removeLayer(layerMayotte);
   }
 
-  layerMetropole = L.vectorGrid.slicer(places,{
-    vectorTileLayerName: 'metropole',
-    rendererFactory: L.svg.tile,
-    interactive: true,
-    getFeatureId: function(f) {
-        return f.properties.id;
-    },
-    vectorTileLayerStyles: {metropole: gridStyle}, 
-    // onEachFeature: onEachFeature
-  })
-  .on('mouseover', function(e) {
-    if (e.layer.properties.id != highlightedFeatureId || !highlightedFeatureId) {
-      if (highlightedFeatureId) {
-        layerMetropole.resetFeatureStyle(highlightedFeatureId);
-      }
-      highlightedFeatureId = e.layer.properties.id;
-      var style = gridStyle(e.layer.properties);
-      style.weight = 3;
-      layerMetropole.setFeatureStyle(e.layer.properties.id, style);
-      info.update(e.layer.properties);
-    }
-  })
-  .addTo(MetropolitanFranceMap);
+  layerMetropole = L.gridLayer();
+  layerMetropole.createTile = function(coords, done) {
+    var canvas = addCanvas(coords, done);
+    return canvas;
+  };
+  layerMetropole.addTo(MetropolitanFranceMap);
+  var prevGridLayer = layerMetropole;
+
+  //picking engine
+  var clickListener = L.gridLayer({
+    className: "clickListenerLayer",
+    opacity: 0
+  });
+  clickListener.createTile = drawListenerTile;
+
   // layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
   layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
   layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(MartiniqueMap);
   layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuyaneMap);
   layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(ReunionMap);
   layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(MayotteMap);
+}
+
+function drawListenerTile(coords, done) {
+  var canvas = addCanvas(coords, done, true);
+  var time = 0;
+
+  d3.select(canvas)
+    .on("mousedown", function(d) {
+      time = new Date();
+    })
+    .on("mouseup", function() {
+      if (new Date() - time > 300) return; // si c'est un drag et pas un clic, on sort
+
+      var x = d3.event.offsetX;
+      var y = d3.event.offsetY;
+      var ctx = this.getContext("2d");
+
+      var cid = ctx.getImageData(x, y, 1, 1).data.join();
+      console.log(cid);
+
+      var clicked = places.features.forEach(function(d) {
+        if (cid === d.properties._pickingColorID) {
+          d.properties.color = "red";
+        } else {
+          d.properties.color = "white";
+        }
+      });
+
+      // canvasが全て削除され描画されるためちらつく
+      //grid.redraw();
+
+      //ちらつき防止のために新たにgird layerを追加して、前のgrid layerを消すという処理をしている。
+
+      var grid = L.gridLayer();
+      grid.createTile = function(coords, done) {
+        var canvas = addCanvas(coords, done);
+        return canvas;
+      };
+
+      map.addLayer(grid);
+      clickListener.bringToFront();
+
+      setTimeout(function() {
+        map.removeLayer(prevGridLayer);
+        prevGridLayer = grid;
+      }, 500);
+    });
+
+  return canvas;
+}
+
+function addCanvas(coords, done, clickable) {
+  var pad = 0;
+
+  var canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+
+  var ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "black";
+
+  var tile = tileIndex.getTile(coords.z, coords.x, coords.y);
+  if (!tile) {
+    // console.log('tile empty');
+    return canvas;
+  }
+
+  var features = tile.features;
+  for (var i = 0; i < features.length; i++) {
+    var feature = features[i];
+    var type = feature.type;
+
+    if (clickable) {
+      ctx.fillStyle = feature.tags._pickingColor
+        ? feature.tags._pickingColor
+        : null;
+    } 
+    else {
+      ctx.fillStyle = feature.tags.color ? feature.tags.color : "white";
+    }
+
+    ctx.beginPath();
+    ctx.setLineDash([1, 5]);
+
+    for (var j = 0; j < feature.geometry.length; j++) {
+      var geom = feature.geometry[j];
+      for (var k = 0; k < geom.length; k++) {
+        var p = geom[k];
+        var extent = 4096;
+
+        var x = p[0] / extent * 256;
+        var y = p[1] / extent * 256;
+        if (k) ctx.lineTo(x + pad, y + pad);
+        else ctx.moveTo(x + pad, y + pad);
+      }
+    }
+
+    if (type === 3 || type === 1) ctx.fill("evenodd");
+    ctx.stroke();
+  }
+
+  setTimeout(function() {
+    done(null, canvas);
+  }, 10);
+
+  return canvas;
+}
+
+function toColor(num) {
+  num >>>= 0;
+  var b = num & 0xff;
+  var g = (num & 0xff00) >>> 8;
+  var r = (num & 0xff0000) >>> 16;
+
+  return {
+    color: "rgb(" + [r, g, b].join(",") + ")",
+    id: [r, g, b, 255].join()
+  };
 }
 
 /*--------------------Interactivité avec la carte, design---------------------*/
