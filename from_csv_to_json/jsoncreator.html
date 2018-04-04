@@ -18,13 +18,29 @@ function csv_process(csv_string){
     if (line[0] in ["0","1","2","3","4","5","6","7","8","9"]){
         line=line.split(";");
         line[2]=line[2].replace("\r","");
-        json.data[line[0]]=line[2];
+        if (isNaN(parseFloat(line[2]))){
+          json.data[line[0]]=line[2];
+        } else {
+          json.data[line[0]]=parseFloat(line[2].replace(",","."));
+        };
       };
     if (line[0]=="C"){
         line=line.split(";");
         line[2]=line[2].replace("\r","");
+        if (line[1].substring(0,7)=="régions"){
+          scale="region";
+        };
+        if (line[1].substring(0,12)=="départements"){
+          scale="departement";
+        };
+        if (line[1].substring(0,5)=="inter"){
+          scale="EPCI";
+        };
+        if (line[1].substring(0,8)=="communes"){
+          scale="commune";
+        };
         json.metadata["stat_name"]=line[2];
-        json.metadata["scale"]=line[1];
+        json.metadata["scale"]=scale;
       };
     if (line[0]=="U"){
         line=line.split(";");
@@ -42,6 +58,9 @@ function handleFileSelect(evt) {
 
   var csv_file=evt.target.files[0];
   var json_name=csv_file.name.replace(".csv",".json");
+  json_name=json_name.replace("é","e");
+  json_name=json_name.replace("è","e");
+  json_name=json_name.replace("à","a");
   var reader = new FileReader();
     reader.onload = function(){
       var csv_string = reader.result;
