@@ -57,7 +57,7 @@ var MetropolitanFranceMap = L.map('MetropolitanFranceMap', {
 	minZoom:5.5,
 	maxZoom:15,
 	attributionControl: false,
-  zoomControl:false,
+	zoomControl:false,
 	maxBounds:MetropolitanFranceMaxBounds,
 	renderer: L.canvas()
 });
@@ -775,6 +775,33 @@ function getGradesWithEgalEffectifs(){
   }
 
 }
+
+
+/*
+Fonction permettant d'obtenir le centroide d'un array de points
+*/
+function getCentroid(polygone){
+    var arr= polygone.toGeoJSON();
+
+    var twoTimesSignedArea = 0;
+    var cxTimes6SignedArea = 0;
+    var cyTimes6SignedArea = 0;
+
+    var length = arr.length
+
+    var x = function (i) { return arr[i % length][0] };
+    var y = function (i) { return arr[i % length][1] };
+
+    for ( var i = 0; i < arr.length; i++) {
+        var twoSA = x(i)*y(i+1) - x(i+1)*y(i);
+        twoTimesSignedArea += twoSA;
+        cxTimes6SignedArea += (x(i) + x(i+1)) * twoSA;
+        cyTimes6SignedArea += (y(i) + y(i+1)) * twoSA;
+    }
+    var sixSignedArea = 3 * twoTimesSignedArea;
+    return [ cxTimes6SignedArea / sixSignedArea, cyTimes6SignedArea / sixSignedArea];
+}
+
 
 /*
 Fonction qui s'effectuera au chargement de la page pour afficher les données
