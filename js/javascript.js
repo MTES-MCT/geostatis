@@ -193,13 +193,13 @@ var region = document.getElementById("region");
 var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
 var affichageStats = document.getElementById("affichageStats");
-var choose_mode = document.getElementById("choose_mode");
-var choose_color_palette = document.getElementById("choose_color_palette");
+var choixMode = document.getElementById("choixMode");
+var choixCouleurPalette = document.getElementById("choixCouleurPalette");
 var statAffichee = document.getElementById("statAffichee");
 var metadonneesStat = document.getElementById("metadonneesStat");
-var numberOfRange = document.getElementById("numberOfRange");
-var showNumberOfRange = document.getElementById("showNumberOfRange");
-showNumberOfRange.innerHTML = numberOfRange.value;
+var nombreClasses = document.getElementById("nombreClasses");
+var afficheNombreClasses = document.getElementById("afficheNombreClasses");
+afficheNombreClasses.innerHTML = nombreClasses.value;
 
 //Variables globales
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
@@ -225,8 +225,8 @@ var statsMetadata;
 var places;
 var valeurs;
 var numeriquesValeurs; //Même tableau que valeurs mais qu'avec des nombres
-var mode = choose_mode.value;
-var color_palette = choose_color_palette.value;
+var mode = choixMode.value;
+var color_palette = choixCouleurPalette.value;
 var valeurNombreClasses; //Nombre de classes
 
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
@@ -485,7 +485,7 @@ function highlightFeature(e) {
     layer.bringToFront();
   }
 
-  info.update(layer.feature.properties);
+  controlInfo.update(layer.feature.properties);
 }
 
 /*
@@ -498,7 +498,7 @@ function resetHighlight(e) {
   layerGuyane.resetStyle(e.target);
   layerReunion.resetStyle(e.target);
   layerMayotte.resetStyle(e.target);
-  info.update();
+  controlInfo.update();
 }
 
 /*
@@ -516,7 +516,7 @@ Fonction permettant d'arrondir un nombre avec un precision définie
 */
 function precisionDecimale(nombre, precision) {
   var facteur = Math.pow(10, precision);
-  return Math.round(nombre * factor) / facteur;
+  return Math.round(nombre * facteur) / facteur;
 }
 
 //Fonction permettant de créer la syntaxe HTML pour la légende
@@ -556,10 +556,10 @@ function afficherPopUp(mapObject) {
   var map = mapObject;
 
   /* Pop-up sur le côté avec les infos de la zone étudiée */
-  info = L.control({position: 'topright'});
+  controlInfo = L.control({position: 'topright'});
 
-  info.onAdd = function (mapFranceMetropolitaine) {
-    this._div = L.DomUtil.create('div', 'info'); // Création d'une div de classe INFO
+  controlInfo.onAdd = function (mapFranceMetropolitaine) {
+    this._div = L.DomUtil.create('div', 'controlInfo'); // Création d'une div de classe INFO
     this.update();
     return this._div;
   };
@@ -571,7 +571,7 @@ function afficherPopUp(mapObject) {
   - code INSEE de cette zone ;
   - valeur statistique associée à la zone. Non connue si elle n'existe pas.
   */
-  info.update = function (properties) {
+  controlInfo.update = function (properties) {
     var p = properties;
     var valeurStat = "Non connue";
     if (p && !isNaN(p.stats)){
@@ -583,7 +583,7 @@ function afficherPopUp(mapObject) {
         : 'Survoler une région');
   };
 
-  info.addTo(mapObject); //Ajout de l'objet sur la carte
+  controlInfo.addTo(mapObject); //Ajout de l'objet sur la carte
 }
 
 /*------------------------Sélection des palettes------------------------------*/
@@ -594,10 +594,10 @@ Fonction permettant de faire la liste des palettes de couleurs disponibles dans
 le fichier HTML
 */
 function completeChooseColorPalette(){
-  choose_color_palette.innerHTML = "";
+  choixCouleurPalette.innerHTML = "";
 
   for (var i=0;i<Object.keys(colorPalettes).length;i++){
-    choose_color_palette.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
+    choixCouleurPalette.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
   }
 }
 
@@ -654,14 +654,14 @@ function onClickChoixZone(){
 Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
 */
 function mettreAJourMode(){
-  mode = choose_mode.value;
+  mode = choixMode.value;
 }
 
 /*
 Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
 */
 function mettreAJourPaletteCouleur(){
-  var i = choose_color_palette.value;
+  var i = choixCouleurPalette.value;
   colors = colorPalettes[i].couleurs;
 }
 
@@ -670,12 +670,12 @@ Fonction permettant de mettre à jour le nombre de classes que l'utilisateur a
 entré avec la barre
 */
 function obtenirNombreClasses(){
-  var tempNumberOfRange = parseInt(numberOfRange.value);
-  if (isNaN(tempNumberOfRange)) {
-    tempNumberOfRange = 5;
+  var tempnombreClasses = parseInt(nombreClasses.value);
+  if (isNaN(tempnombreClasses)) {
+    tempnombreClasses = 5;
   }
-  showNumberOfRange.innerHTML = tempNumberOfRange;
-  valeurNombreClasses = tempNumberOfRange;
+  afficheNombreClasses.innerHTML = tempnombreClasses;
+  valeurNombreClasses = tempnombreClasses;
 }
 
 /*
@@ -804,6 +804,6 @@ window.onload = onLoad;
 choixZone.addEventListener('click',onClickChoixZone);
 mapFranceMetropolitaine.on('zoom',restreindre_donnees);
 
-choose_mode.addEventListener("change",mettreAJourLegende);
-choose_color_palette.addEventListener("change",mettreAJourLegende);
-numberOfRange.addEventListener("change",mettreAJourLegende);
+choixMode.addEventListener("change",mettreAJourLegende);
+choixCouleurPalette.addEventListener("change",mettreAJourLegende);
+nombreClasses.addEventListener("change",mettreAJourLegende);

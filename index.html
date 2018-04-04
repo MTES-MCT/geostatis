@@ -18,16 +18,16 @@
 	</head>
 
 	<body>
-		<div id="Maps_parametresPersonnalisation">
+		<div id="mapsEtParametresPersonnalisation">
 
-			<div id="allMaps">
-				<div id="MetropolitanFranceMap"></div>
-				<div id="Overseas_Maps">
-					<div id="GuadeloupeMap" class="DROM_Maps"></div>
-					<div id="MartiniqueMap" class="DROM_Maps"></div>
-					<div id="GuyaneMap" class="DROM_Maps"></div>
-					<div id="ReunionMap" class="DROM_Maps"></div>
-					<div id="MayotteMap" class="DROM_Maps"></div>
+			<div id="conteneurMaps">
+				<div id="mapFranceMetropolitaine"></div>
+				<div id="mapOutreMer">
+					<div id="mapGuadeloupe" class="mapDROM"></div>
+					<div id="mapMartinique" class="mapDROM"></div>
+					<div id="mapGuyane" class="mapDROM"></div>
+					<div id="mapReunion" class="mapDROM"></div>
+					<div id="mapMayotte" class="mapDROM"></div>
 				</div>
 			</div>
 
@@ -50,7 +50,7 @@
 
 				<div id="menuChoixMode" class="menuChoix">
 					<div class="titreMenu">Mode</div>
-				<select id="choose_mode" class="menu_deroulant">
+				<select id="choixMode" class="menuDeroulant">
 					<option selected value="intervallesEgaux">Intervalles égaux</option>
 					<option value="effectifsEgaux">Effectifs égaux</option>
 					<option value="ecartType">Écart-type</option>
@@ -60,18 +60,14 @@
 
 			<div id="menuChoixPaletteCouleur" class="menuChoix">
 				<div class="titreMenu">Échelle de couleur</div>
-			<select id="choose_color_palette" class="menu_deroulant">
-					<option selected>Classique</option>
-					<option>Dégradé vert</option>
-					<option>Dégradé bleu</option>
-					<option>Dégradé rouge</option>
+			<select id="choixCouleurPalette" class="menuDeroulant">
 				</select>
 			</div>
 
 			<div id="menuChoixNombreClasses" class="menuChoix">
 				<div class="titreMenu">Nombre de classes</div>
-				<input type="range" id="numberOfRange" class="slider" min=2 max=10 step=1>
-				<div id="showNumberOfRange"></div>
+				<input type="range" id="nombreClasses" class="slider" min=2 max=10 step=1>
+				<div id="afficheNombreClasses"></div>
 			</div>
 		</div>
 		</div>
