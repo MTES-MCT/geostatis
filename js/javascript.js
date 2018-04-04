@@ -217,6 +217,7 @@ var layerMayotte;
 var topoJSONByScale = {};
 var tileIndex;
 var prevGridLayer;
+var clickListener;
 
 var legend = L.control({position: 'bottomleft'}); //Légende
 var Geometry_JSON_scale = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
@@ -305,14 +306,15 @@ function addGeojsonLayers() {
     return canvas;
   };
   layerMetropole.addTo(MetropolitanFranceMap);
-  var prevGridLayer = layerMetropole;
+  prevGridLayer = layerMetropole;
 
   //picking engine
-  var clickListener = L.gridLayer({
+  clickListener = L.gridLayer({
     className: "clickListenerLayer",
     opacity: 0
   });
   clickListener.createTile = drawListenerTile;
+  clickListener.addTo(MetropolitanFranceMap);
 
   // layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(MetropolitanFranceMap);
   layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(GuadeloupeMap);
@@ -359,11 +361,11 @@ function drawListenerTile(coords, done) {
         return canvas;
       };
 
-      map.addLayer(grid);
+      MetropolitanFranceMap.addLayer(grid);
       clickListener.bringToFront();
 
       setTimeout(function() {
-        map.removeLayer(prevGridLayer);
+        MetropolitanFranceMap.removeLayer(prevGridLayer);
         prevGridLayer = grid;
       }, 500);
     });
@@ -374,7 +376,7 @@ function drawListenerTile(coords, done) {
 function addCanvas(coords, done, clickable) {
   var pad = 0;
 
-  var canvas = document.createElement("canvas");
+  var canvas = L.DomUtil.create('canvas', 'leaflet-tile');
   canvas.width = 256;
   canvas.height = 256;
 
@@ -387,9 +389,7 @@ function addCanvas(coords, done, clickable) {
     return canvas;
   }
 
-  var features = tile.features;
-  for (var i = 0; i < features.length; i++) {
-    var feature = features[i];
+  tile.features.forEach(function(feature, i) {
     var type = feature.type;
 
     if (clickable) {
@@ -404,22 +404,19 @@ function addCanvas(coords, done, clickable) {
     ctx.beginPath();
     ctx.setLineDash([1, 5]);
 
-    for (var j = 0; j < feature.geometry.length; j++) {
-      var geom = feature.geometry[j];
-      for (var k = 0; k < geom.length; k++) {
-        var p = geom[k];
+    feature.geometry.forEach(function(geom, j) {
+      geom.forEach(function(p, k) {
         var extent = 4096;
-
         var x = p[0] / extent * 256;
         var y = p[1] / extent * 256;
         if (k) ctx.lineTo(x + pad, y + pad);
         else ctx.moveTo(x + pad, y + pad);
-      }
-    }
+      });
+    });
 
     if (type === 3 || type === 1) ctx.fill("evenodd");
     ctx.stroke();
-  }
+  });
 
   setTimeout(function() {
     done(null, canvas);
