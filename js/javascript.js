@@ -774,6 +774,14 @@ function getCentroid(polygone){
 
 
 /*
+Fonction permettant determiner l'emprise des figurés proportionnels
+*/
+function getProportionalCircle(polygone){
+    return polygone.getBounds();
+}
+
+
+/*
 Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
