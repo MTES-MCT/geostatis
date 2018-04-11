@@ -195,6 +195,7 @@ var commune = document.getElementById("commune");
 var affichageStats = document.getElementById("affichageStats");
 var choixMode = document.getElementById("choixMode");
 var choixCouleurPalette = document.getElementById("choixCouleurPalette");
+var choixStat = document.getElementById("choixStat");
 var statAffichee = document.getElementById("statAffichee");
 var metadonneesStat = document.getElementById("metadonneesStat");
 var nombreClasses = document.getElementById("nombreClasses");
@@ -215,16 +216,16 @@ var highlightedFeatureId;
 var controlLegende = L.control({position: 'bottomleft'}); //Légende
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
 var controlEchelle = L.control.scale({imperial:false, position: 'bottomright'}); //Échelle
-var statsJson; //Fichier JSON affichant les stats
-var grades = [0, 1, 2, 4, 5, 10, 20, 50, 80];
+var statsJson = ''; //Fichier JSON affichant les stats
+var grades = [];
 var colors;
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var zoneAffichee = 'region';
 var stats;
-var statsMetadata;
+var statsMetadata = null;
 var places;
 var valeurs;
-var numeriquesValeurs; //Même tableau que valeurs mais qu'avec des nombres
+var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
 var mode = choixMode.value;
 var color_palette = choixCouleurPalette.value;
 var valeurNombreClasses; //Nombre de classes
@@ -235,22 +236,41 @@ var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FE
 /*------------------------Lecture d'un fichier JSON---------------------------*/
 
 /*
-Fonction permettant la lecture d'un fichier JSON pour l'afficher sur la carte
+Fonction permettant le changement de couche géométrique
 */
-function switcherFichierJson() {
+function majGeometrie() {
+
+  majEchelle();
 
   var json = topoJsonParEchelle[echelleGeometrieJson];
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
   obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
+  majStats();
+  majLegende();
+  ajouterGeojsonLayers();
+}
 
-  if (statsJson && statsJson != '') {
+/*
+Fonction permettant de mettre à jour les données statistiques pour un objet JSON
+*/
+function majStats(){
+
+  valeurs = [];
+
+  if (statsJson != '') {
     obtenirStats();
   } else {
-    ajouterGeojsonLayers();
+    for (let i=0; i< places.features.length; i++) {
+      places.features[i].properties["stats"] = NaN;
+    }
+    for (let i=0; i< placesDROM.features.length; i++) {
+      placesDROM.features[i].properties["stats"] = NaN;
+    }
   }
 }
+
 
 /*
 Fonction permettant de charger d'un fichier TopoJSON pour qui va être décompressé.
@@ -270,8 +290,16 @@ function load_fichier_topoJSON(scale = echelleGeometrieJson) {
 Fonction pour permettre d'afficher les métadonnées de la statistique
 */
 function afficherMetadonneesStats(){
-  if (statsMetadata){
+  if (statsMetadata != null){
   metadonneesStat.innerHTML = statsMetadata.stat_name;
+    for (x in statsMetadata){
+      if (x!="stat_name" && x!="scale"){
+        metadonneesStat.innerHTML += "<br>" + x + " : " +  statsMetadata[x];
+      }
+    }
+  }
+  else{
+    metadonneesStat.innerHTML = "";
   }
 }
 
@@ -279,22 +307,92 @@ function afficherMetadonneesStats(){
 Fonction permettant d'obtenir toutes les valeurs numériques d'un tableau
 */
 function obtenirArrayNumerique(array){
-  var newArray = [];
+  var nouvelArray = [];
 
   for (var i=0;i<array.length;i++){
-    if (!isNaN(array[i])){
-      newArray.push(array[i]);
+    if (!isNaN(array[i]) && array[i]!=""){
+      nouvelArray.push(array[i]);
     }
   }
-  return newArray;
+  return nouvelArray;
+}
+
+function obtenirListeFichiersStat(){
+
+  var promesse = d3.text("./fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
+    //Liste des fichiers de statistique sous forme de liste
+    listeFichiers = listeFichiers.split(";") ;
+    var majListeFichiers = [];
+    for (var i =0;i<listeFichiers.length;i++){
+      //Cas où le fichier est un JSON
+      if (listeFichiers[i].split('.')[1] == 'json'){
+        majListeFichiers.push(listeFichiers[i]);
+      }
+    }
+    return majListeFichiers;
+  });
+
+  return promesse;
+}
+
+var listeStats = [];
+var listeStatsEtTitres = [];
+var listeFichiersJson = [];
+
+function remplirToto(i){
+  //Lecture du titre de la statistique associée au fichier
+  var nouvellePromesse = d3.json("./fichiers_stats/" + listeFichiersJson[i]).then(function(stats) {
+    var titreStat = stats.metadata.stat_name;
+    //Cas où la statistique n'existe pas
+    if (!listeStats.includes(titreStat)){
+      listeStats.push(titreStat);
+      listeStatsEtTitres.push([listeFichiersJson[i].split('_')[0],titreStat]);
+    }
+    return i+1;
+  });
+  if (i < listeFichiersJson.length - 1) {
+    return nouvellePromesse.then(remplirToto);
+  }
+}
+
+function remplirListeStats(){
+  var promesse = obtenirListeFichiersStat();
+  promesse.then(function(listeFichiers) {
+    for (let i=0;i<listeFichiers.length;i++){
+        listeFichiersJson.push(listeFichiers[i]);
+    }
+    remplirToto(0).then(function(){
+      choixStat.innerHTML = "<option>-------</option>\n";
+      choixStat.style = "width:50px;"
+      for (var i=0; i<listeStats.length;i++){
+        choixStat.innerHTML += "<option value =" + i +">" + listeStatsEtTitres[i][1] + "</option>\n";
+    }
+    });
+  });
 }
 
 /*
 Fonction permettant de récupérer le chemin du fichier voulu
 */
 function obtenirCheminFichierJsonStats(){
-  statsJson = "./fichiers_stats/"
-  statsJson += "export_part-inscrits-formations-env.json";
+  statsJson = "./fichiers_stats/";
+  var nomFichierStatsJson;
+
+  try {
+    nomFichierStatsJson = listeStatsEtTitres[parseFloat(choixStat.value)][0];
+    nomFichierStatsJson += "_" + choixZone.choixzone.value + ".json";
+
+    if (!listeFichiersJson.includes(nomFichierStatsJson)){
+      statsJson = "";
+
+    }
+    else{
+      statsJson += nomFichierStatsJson ;
+    }
+}
+catch(error) {
+  statsJson = "";
+}
 
 }
 
@@ -304,10 +402,9 @@ de les représenter sur les cartes.
 */
 function obtenirStats() {
 
-  valeurs = [];
-
   d3.json(statsJson).then(function(stats) {
     statsMetadata = stats.metadata;
+    afficherMetadonneesStats();
 
     if (stats.metadata.scale == choixZone.choixzone.value) {
       for (let i=0; i< places.features.length; i++) {
@@ -321,8 +418,8 @@ function obtenirStats() {
         placesDROM.features[i].properties["stats"] = stats.data[code_insee];
       }
     }
-    ajouterGeojsonLayers();
-    numeriquesValeurs = obtenirArrayNumerique(valeurs);
+    valeursNumeriques = obtenirArrayNumerique(valeurs);
+    statsMetadata = null;
   });
 }
 
@@ -363,7 +460,7 @@ function restreindre_donnees() {
   //   */
   //   if (choixZone.choixzone.value == "commune") {
   //     departement.checked = true;
-  //     afficherZone();
+  //     majGeometrie();
   //   }
   //
   //   //On cache la case des communes
@@ -385,7 +482,7 @@ function restreindre_donnees() {
     */
     if (choixZone.choixzone.value == "region") {
       departement.checked = true;
-      afficherZone();
+      majGeometrie();
     }
 
     //On cache la case des régions
@@ -429,13 +526,14 @@ function obtenirCouleur(d) {
 
     for (var i = 0; i < grades.length-1; i++) {
       if (isNaN(d)){
-        return '#AAAAAA'
+        return '#AAAAAA';
       }
       else if (d >= grades[i] && d < grades[i+1]){
         return colors[i];
       }
     }
     return colors[colors.length-1];
+
 }
 
 /*
@@ -443,8 +541,9 @@ Fonction permettant de créer le style des polygones
 */
 function style(feature) {
   var color = ["#AAAAAA"];
-  if (feature.properties.stats) {
-    color = obtenirCouleur(feature.properties.stats);
+  var valeur = feature.properties.stats;
+  if (!isNaN(valeur) && valeur != null && valeur != "") {
+    color = obtenirCouleur(valeur);
   }
   if (choixZone.choixzone.value == "commune" && mapFranceMetropolitaine.getZoom() <= 7) {
     return {
@@ -492,7 +591,7 @@ function highlightFeature(e) {
 Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
 */
 function resetHighlight(e) {
-  // layerMetropole.resetFeatureStyle(e.target);
+  layerMetropole.resetStyle(e.target);
   layerGuadeloupe.resetStyle(e.target);
   layerMartinique.resetStyle(e.target);
   layerGuyane.resetStyle(e.target);
@@ -531,7 +630,7 @@ function creerLegende() {
   for (var i = 0; i < grades.length; i++) {
     div.innerHTML +=
         '<i style="background:' + obtenirCouleur(grades[i] + 1) + '"></i> ' +
-        precisionDecimale(grades[i], 2) + (precisionDecimale(grades[i + 1], 2) ? '&ndash;' + precisionDecimale(grades[i + 1], 2) + '<br>' : '+');
+        precisionDecimale(grades[i], 2) + (precisionDecimale(grades[i + 1], 2) ? ' &ndash; ' + precisionDecimale(grades[i + 1], 2) + '<br>' : '+');
   }
 
   return div;
@@ -551,7 +650,7 @@ function afficherLegende() {
 Fonction permettant d'afficher la barre d'information qui affiche le nom de la
 zone sélectionnée avec d'autres infos
 */
-function afficherPopUp(mapObject) {
+function afficherCartouche(mapObject) {
 
   var map = mapObject;
 
@@ -572,10 +671,9 @@ function afficherPopUp(mapObject) {
   - valeur statistique associée à la zone. Non connue si elle n'existe pas.
   */
   controlInfo.update = function (properties) {
-    var p = properties;
     var valeurStat = "Non connue";
-    if (p && !isNaN(p.stats)){
-      valeurStat = parseFloat(p.stats);
+    if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
+      valeurStat = parseFloat(properties.stats);
     }
 
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
@@ -593,7 +691,7 @@ function afficherPopUp(mapObject) {
 Fonction permettant de faire la liste des palettes de couleurs disponibles dans
 le fichier HTML
 */
-function completeChooseColorPalette(){
+function majChoixCouleurPalette(){
   choixCouleurPalette.innerHTML = "";
 
   for (var i=0;i<Object.keys(colorPalettes).length;i++){
@@ -607,7 +705,7 @@ function completeChooseColorPalette(){
 /*
 Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle échelle en fonction du niveau de zoom (Région, département, EPCI, commune)
 */
-function choisirZone() {
+function majEchelle() {
   if (choixZone.choixzone.value == "departement") {
     echelleGeometrieJson = "departements";
   }
@@ -619,16 +717,7 @@ function choisirZone() {
   }
   //Mise à jour de la zone affichée
   zoneAffichee = choixZone.choixzone.value;
-}
-
-/*
-Fonction permettant de choisir la zone à afficher sur la carte, de modifier la
-légende en conséquence et de lire le fichier JSON en consquence.
-*/
-function afficherZone(){
-  choisirZone();
-  afficherLegende(grades);
-  switcherFichierJson();
+  console.log(zoneAffichee);
 }
 
 /*
@@ -637,32 +726,30 @@ lorsque l'utilisateur change et non lorsqu'il clique une nouvelle fois sur la
 même zone.
 */
 function onClickChoixZone(){
-  if (choixZone.choixzone.value == zoneAffichee){
-    //Ne rien faire
-  }
-  else{
-    afficherZone();
-    afficherMetadonneesStats();
+  if (choixZone.choixzone.value != zoneAffichee){
+    majGeometrie();
   }
 }
 
-
 /*-----------------------Personnalisation de la carte-------------------------*/
-
 
 /*
 Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
 */
-function mettreAJourMode(){
+function majMode(){
   mode = choixMode.value;
+  console.log("Mode :");
+  console.log(mode);
 }
 
 /*
 Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
 */
-function mettreAJourPaletteCouleur(){
+function majPaletteCouleur(){
   var i = choixCouleurPalette.value;
   colors = colorPalettes[i].couleurs;
+  console.log("Colors :");
+  console.log(colors);
 }
 
 /*
@@ -670,12 +757,14 @@ Fonction permettant de mettre à jour le nombre de classes que l'utilisateur a
 entré avec la barre
 */
 function obtenirNombreClasses(){
-  var tempnombreClasses = parseInt(nombreClasses.value);
-  if (isNaN(tempnombreClasses)) {
-    tempnombreClasses = 5;
+  var tempNombreClasses = parseInt(nombreClasses.value);
+  if (isNaN(tempNombreClasses)) {
+    tempNombreClasses = 5;
   }
-  afficheNombreClasses.innerHTML = tempnombreClasses;
-  valeurNombreClasses = tempnombreClasses;
+  afficheNombreClasses.innerHTML = tempNombreClasses;
+  valeurNombreClasses = tempNombreClasses;
+  console.log("ValeurNombreClasses :");
+  console.log(valeurNombreClasses);
 }
 
 /*
@@ -683,8 +772,11 @@ Fonction pour permettre de mettre à jour les bornes des intervalles
 */
 function obtenirBornes(){
   grades = []; //Réinitialisation de grades
-
-  if (mode == 'intervallesEgaux'){
+  console.log(valeursNumeriques);
+  if (valeursNumeriques.length == 0){
+    grades = [];
+  }
+  else if (mode == 'intervallesEgaux'){
     obtenirBornesAvecIntervallesEgaux();
   }
   else if (mode == 'effectifsEgaux'){
@@ -693,37 +785,26 @@ function obtenirBornes(){
   else{
     //Voir ce qu'il faut faire
   }
+  console.log("Bornes : ");
+  console.log(grades);
 }
-
-/*
-Fonction pour permettre de mettre à jour la légende
-*/
-function mettreAJourLegende(){
-  mettreAJourMode();
-  mettreAJourPaletteCouleur();
-  obtenirNombreClasses();
-  obtenirBornes();
-  afficherLegende();
-  ajouterGeojsonLayers(); //Mise à jour des couleurs
-}
-
 
 /*
 Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
 "Intervalles Égaux" est choisi
 */
 function obtenirBornesAvecIntervallesEgaux(){
+    var minStats = Math.min.apply(Math, valeursNumeriques);
+    console.log(minStats);
+    var maxStats = Math.max.apply(Math, valeursNumeriques);
+    var taille = (maxStats-minStats)/valeurNombreClasses;
+    var tempGrades = minStats;
 
-  var minStats = Math.min.apply(Math, numeriquesValeurs);
-  var maxStats = Math.max.apply(Math, numeriquesValeurs);
-  var taille = (maxStats-minStats)/valeurNombreClasses;
-  var tempGrades = minStats;
+    for (var i=0;i<valeurNombreClasses;i++){
 
-  for (var i=0;i<valeurNombreClasses;i++){
-
-    grades.push(tempGrades);
-    tempGrades += taille;
-  }
+      grades.push(tempGrades);
+      tempGrades += taille;
+    }
 }
 
 /*
@@ -732,20 +813,30 @@ Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
 */
 function obtenirBornesAvecEffectifsEgaux(){
   //Tri des valeurs dans l'ordre numérique
-  numeriquesValeurs.sort(function(a,b) { return a - b;});
+  valeursNumeriques.sort(function(a,b) { return a - b;});
 
-  var lengthValeurs = numeriquesValeurs.length;
+  var lengthValeurs = valeursNumeriques.length;
   var tailleClasse = lengthValeurs/valeurNombreClasses;
 
   var i = 0;
 
   while (i<lengthValeurs) {
-    grades.push(numeriquesValeurs[parseInt(i)]);
+    grades.push(valeursNumeriques[parseInt(i)]);
     i += tailleClasse;
   }
 
 }
 
+/*
+Fonction pour permettre de mettre à jour la légende
+*/
+function majLegende(){
+  majMode();
+  majPaletteCouleur();
+  obtenirNombreClasses();
+  obtenirBornes();
+  afficherLegende();
+}
 
 /*
 Fonction permettant d'obtenir le centroide d'un array de points
@@ -774,19 +865,11 @@ function getCentroid(polygone){
 
 
 /*
-Fonction permettant determiner l'emprise des figurés proportionnels
-*/
-function getProportionalCircle(polygone){
-    return polygone.getBounds();
-}
-
-
-/*
 Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
 function onLoadTopoJSON(){
-  load_fichier_topoJSON().then(switcherFichierJson);
+  load_fichier_topoJSON().then(majGeometrie);
   load_fichier_topoJSON("departements").then(load_fichier_topoJSON("communes"));
 }
 
@@ -794,15 +877,16 @@ function onLoadTopoJSON(){
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
-  completeChooseColorPalette();
-  mettreAJourPaletteCouleur();
+  remplirListeStats();
+  majChoixCouleurPalette();
+  majPaletteCouleur();
   ajouterEchelle();
   afficherBouttonsZoomHome();
   onLoadTopoJSON();
   zoomSelonBounds();
   bloquerFonctionnalitesMapsOutreMer();
   ajouterLayers();
-  afficherPopUp(mapFranceMetropolitaine);
+  afficherCartouche(mapFranceMetropolitaine);
   afficherLegende();
 }
 
@@ -812,6 +896,8 @@ window.onload = onLoad;
 choixZone.addEventListener('click',onClickChoixZone);
 mapFranceMetropolitaine.on('zoom',restreindre_donnees);
 
-choixMode.addEventListener("change",mettreAJourLegende);
-choixCouleurPalette.addEventListener("change",mettreAJourLegende);
-nombreClasses.addEventListener("change",mettreAJourLegende);
+choixMode.addEventListener("change",majGeometrie);
+choixCouleurPalette.addEventListener("change",majGeometrie);
+nombreClasses.addEventListener("change",majGeometrie);
+choixMode.addEventListener("change",majGeometrie);
+choixStat.addEventListener("change",majGeometrie);
