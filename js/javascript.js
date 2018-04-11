@@ -294,7 +294,7 @@ Fonction permettant de récupérer le chemin du fichier voulu
 */
 function obtenirCheminFichierJsonStats(){
   statsJson = "./fichiers_stats/"
-  statsJson += "export_part-inscrits-formations-env.json";
+  statsJson += "export_densite-de-pop.json";
 
 }
 
