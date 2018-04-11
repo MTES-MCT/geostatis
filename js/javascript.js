@@ -247,9 +247,17 @@ function majGeometrie() {
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
   obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
-  majStats();
-  majLegende();
-  ajouterGeojsonLayers();
+  var promesse = majStats();
+  if (!promesse) {
+    majLegende();
+    ajouterGeojsonLayers();
+  }
+  else {
+    promesse.then(function() {
+      majLegende();
+      ajouterGeojsonLayers();
+    });
+  }
 }
 
 /*
@@ -258,9 +266,10 @@ Fonction permettant de mettre à jour les données statistiques pour un objet JS
 function majStats(){
 
   valeurs = [];
-
+  valeursNumeriques = [];
+  var promesse = null;
   if (statsJson != '') {
-    obtenirStats();
+    promesse = obtenirStats();
   } else {
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
@@ -269,6 +278,7 @@ function majStats(){
       placesDROM.features[i].properties["stats"] = NaN;
     }
   }
+  return promesse;
 }
 
 
@@ -310,7 +320,7 @@ function obtenirArrayNumerique(array){
   var nouvelArray = [];
 
   for (var i=0;i<array.length;i++){
-    if (!isNaN(array[i]) && array[i]!=""){
+    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
       nouvelArray.push(array[i]);
     }
   }
@@ -402,7 +412,7 @@ de les représenter sur les cartes.
 */
 function obtenirStats() {
 
-  d3.json(statsJson).then(function(stats) {
+  var promesse = d3.json(statsJson).then(function(stats) {
     statsMetadata = stats.metadata;
     afficherMetadonneesStats();
 
@@ -421,6 +431,7 @@ function obtenirStats() {
     valeursNumeriques = obtenirArrayNumerique(valeurs);
     statsMetadata = null;
   });
+  return promesse;
 }
 
 /*-------------------------Gestion des objets JSON----------------------------*/
@@ -795,7 +806,6 @@ Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
 */
 function obtenirBornesAvecIntervallesEgaux(){
     var minStats = Math.min.apply(Math, valeursNumeriques);
-    console.log(minStats);
     var maxStats = Math.max.apply(Math, valeursNumeriques);
     var taille = (maxStats-minStats)/valeurNombreClasses;
     var tempGrades = minStats;
@@ -899,5 +909,4 @@ mapFranceMetropolitaine.on('zoom',restreindre_donnees);
 choixMode.addEventListener("change",majGeometrie);
 choixCouleurPalette.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
-choixMode.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
