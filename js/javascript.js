@@ -728,7 +728,6 @@ function majEchelle() {
   }
   //Mise à jour de la zone affichée
   zoneAffichee = choixZone.choixzone.value;
-  console.log(zoneAffichee);
 }
 
 /*
@@ -749,8 +748,6 @@ Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
 */
 function majMode(){
   mode = choixMode.value;
-  console.log("Mode :");
-  console.log(mode);
 }
 
 /*
@@ -759,8 +756,6 @@ Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
 function majPaletteCouleur(){
   var i = choixCouleurPalette.value;
   colors = colorPalettes[i].couleurs;
-  console.log("Colors :");
-  console.log(colors);
 }
 
 /*
@@ -774,8 +769,6 @@ function obtenirNombreClasses(){
   }
   afficheNombreClasses.innerHTML = tempNombreClasses;
   valeurNombreClasses = tempNombreClasses;
-  console.log("ValeurNombreClasses :");
-  console.log(valeurNombreClasses);
 }
 
 /*
@@ -783,7 +776,6 @@ Fonction pour permettre de mettre à jour les bornes des intervalles
 */
 function obtenirBornes(){
   grades = []; //Réinitialisation de grades
-  console.log(valeursNumeriques);
   if (valeursNumeriques.length == 0){
     grades = [];
   }
@@ -796,8 +788,6 @@ function obtenirBornes(){
   else{
     //Voir ce qu'il faut faire
   }
-  console.log("Bornes : ");
-  console.log(grades);
 }
 
 /*
