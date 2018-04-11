@@ -3,7 +3,7 @@
 /*Limites maximales de la carte de la France métropolitaine*/
 var maxBoundsFranceMetropolitaine = [
     [38.135,-8.481], // Coordonnées limites du sud-ouest
-    [52.456,11.909]  // Coordonnées limites du nord-est
+    [52.456,13.8]  // Coordonnées limites du nord-est
   ];
 
 /*Limites maximales de la carte de la Guadeloupe*/
