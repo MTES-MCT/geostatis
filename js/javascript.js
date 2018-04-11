@@ -271,7 +271,7 @@ Fonction pour permettre d'afficher les métadonnées de la statistique
 */
 function afficherMetadonneesStats(){
   if (statsMetadata){
-  metadonneesStat.innerHTML = statsMetadata.stat_name;
+    metadonneesStat.innerHTML = statsMetadata.stat_name;
   }
 }
 
@@ -294,8 +294,7 @@ Fonction permettant de récupérer le chemin du fichier voulu
 */
 function obtenirCheminFichierJsonStats(){
   statsJson = "./fichiers_stats/"
-  statsJson += "export_part-inscrits-formations-env.json";
-
+  statsJson += "Stat_A1202__Scale_Reg.json";
 }
 
 /*
@@ -815,3 +814,15 @@ mapFranceMetropolitaine.on('zoom',restreindre_donnees);
 choixMode.addEventListener("change",mettreAJourLegende);
 choixCouleurPalette.addEventListener("change",mettreAJourLegende);
 nombreClasses.addEventListener("change",mettreAJourLegende);
+
+document.getElementById('export').addEventListener('click', function(e) {
+  // html2canvas(document.getElementById('conteneurMaps')).then(function(canvas) {
+  //     document.body.appendChild(canvas);
+  // });
+  mapFranceMetropolitaine.export({
+    format:"image/png",
+    exclude:["#parametresPersonnalisation",".leaflet-control-zoomhome",".controlInfo"]
+  }).then(function(e) {
+     console.log(e);
+  });
+});
