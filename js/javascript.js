@@ -114,20 +114,11 @@ var mapMayotte = L.map('mapMayotte', {
 function zoomSelonBounds() {
   //Zoom sur la France métropolitaine
   mapFranceMetropolitaine.fitBounds(maxBoundsFranceMetropolitaine);
-
-  //Zoom sur la Guadeloupe
+  //Zoom sur les DROM
   mapGuadeloupe.fitBounds(maxBoundsGuadeloupe);
-
-  //Zoom sur la Martinique
   mapMartinique.fitBounds(maxBoundsMartinique);
-
-  //Zoom sur la Guyane
   mapGuyane.fitBounds(maxBoundsGuyane);
-
-  //Zoom sur la Réunion
   mapReunion.fitBounds(maxBoundsReunion);
-
-  //Zoom sur Mayotte
   mapMayotte.fitBounds(maxBoundsMayotte);
 }
 
@@ -161,24 +152,14 @@ function bloquerFonctionnalitesMapsOutreMer() {
 /*
 Fonction permettant l'ajout des couches sur les cartes
 */
-function ajouterLayers() {
-
-  //Ajout de la couche France Métropolitaine
+function ajouterFondsDeCartes() {
+  //Ajout de la couche fond de carte France Métropolitaine
   L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapFranceMetropolitaine);
-
-  //Ajout de la couche Guadeloupe
+  //Ajout de la couche fond de carte sur les DROM
   L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapGuadeloupe);
-
-  //Ajout de la couche Martinique
   L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapMartinique);
-
-  //Ajout de la couche Guyane
   L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapGuyane);
-
-  //Ajout de la couche Reunion
   L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapReunion);
-
-  //Ajout de la couche Mayotte
   L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapMayotte);
 }
 
@@ -210,8 +191,7 @@ var layerGuyane; //Objet layer GeoJSON de la Guyane affiché sur la carte
 var layerReunion; //Objet layer GeoJSON de la Réunion affiché sur la carte
 var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
 
-var topoJsonParEchelle = {};
-var highlightedFeatureId;
+var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
 
 var controlLegende = L.control({position: 'bottomleft'}); //Légende
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
@@ -227,7 +207,6 @@ var places;
 var valeurs;
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
 var mode = choixMode.value;
-var color_palette = choixCouleurPalette.value;
 var valeurNombreClasses; //Nombre de classes
 
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
@@ -283,9 +262,9 @@ function majStats(){
 
 
 /*
-Fonction permettant de charger d'un fichier TopoJSON pour qui va être décompressé.
+Fonction permettant de charger un fichier TopoJSON pour être décompressé.
 */
-function load_fichier_topoJSON(scale = echelleGeometrieJson) {
+function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
 
   var filename = "./fonds_carte/json/" + scale + ".json.txt";
   var promesse = d3.text(filename).then(function(data) {
@@ -327,8 +306,11 @@ function obtenirArrayNumerique(array){
   return nouvelArray;
 }
 
+/*
+Fonction pour créer une liste de fichiers stats disponibles
+*/
 function obtenirListeFichiersStat(){
-
+  //Interroge un fichier php pour obtenir la liste des fichiers du dossier stats
   var promesse = d3.text("./fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
     //Liste des fichiers de statistique sous forme de liste
     listeFichiers = listeFichiers.split(";") ;
@@ -341,7 +323,6 @@ function obtenirListeFichiersStat(){
     }
     return majListeFichiers;
   });
-
   return promesse;
 }
 
@@ -349,7 +330,10 @@ var listeStats = [];
 var listeStatsEtTitres = [];
 var listeFichiersJson = [];
 
-function remplirToto(i){
+/*
+Fonction pour lire chacun des fichiers stats de la liste pour récupérer leur titre
+*/
+function lireFichiersStatDeListe(i = 0){
   //Lecture du titre de la statistique associée au fichier
   var nouvellePromesse = d3.json("./fichiers_stats/" + listeFichiersJson[i]).then(function(stats) {
     var titreStat = stats.metadata.stat_name;
@@ -360,23 +344,27 @@ function remplirToto(i){
     }
     return i+1;
   });
+  //Appel récursif jusqu'à ce que la liste soit entièrement parcourue
   if (i < listeFichiersJson.length - 1) {
-    return nouvellePromesse.then(remplirToto);
+    return nouvellePromesse.then(lireFichiersStatDeListe);
   }
 }
 
+/*
+Fonction pour remplir la liste de stats sélectionnables
+*/
 function remplirListeStats(){
   var promesse = obtenirListeFichiersStat();
   promesse.then(function(listeFichiers) {
     for (let i=0;i<listeFichiers.length;i++){
-        listeFichiersJson.push(listeFichiers[i]);
+      listeFichiersJson.push(listeFichiers[i]);
     }
-    remplirToto(0).then(function(){
+    lireFichiersStatDeListe().then(function(){
       choixStat.innerHTML = "<option>-------</option>\n";
       choixStat.style = "width:50px;"
       for (var i=0; i<listeStats.length;i++){
         choixStat.innerHTML += "<option value =" + i +">" + listeStatsEtTitres[i][1] + "</option>\n";
-    }
+      }
     });
   });
 }
@@ -394,20 +382,18 @@ function obtenirCheminFichierJsonStats(){
 
     if (!listeFichiersJson.includes(nomFichierStatsJson)){
       statsJson = "";
-
     }
     else{
-      statsJson += nomFichierStatsJson ;
+      statsJson += nomFichierStatsJson;
     }
-}
-catch(error) {
-  statsJson = "";
-}
-
+  }
+  catch(error) {
+    statsJson = "";
+  }
 }
 
 /*
-Fonction permettant de lire un fichier de statistiques de le traiter afin
+Fonction permettant de lire un fichier de statistiques et le traiter afin
 de les représenter sur les cartes.
 */
 function obtenirStats() {
@@ -460,7 +446,7 @@ function ajouterGeojsonLayers() {
 Fonction permettant d'éviter de sélectionner certaines données
 en fonction du niveau de zoom
 */
-function restreindre_donnees() {
+function restreindreDonneesSelonZoom() {
   var niveauZoom = mapFranceMetropolitaine.getZoom();
 
   // //Interdiction de l'accès aux communes
@@ -481,7 +467,7 @@ function restreindre_donnees() {
   //
   // } else if (niveauZoom < 8) {
 
-    if (niveauZoom < 8) {
+  if (niveauZoom < 8) {
     //On affiche toutes les possibilités
     choixCommune.style.display = "block";
     choixDepartement.style.display = "block";
@@ -518,7 +504,7 @@ Ajout d'une série de boutons avec 3 choix de zoom :
 - dézoomer
 - retourner à la vue initiale (zoom à 5.5)
 */
-function afficherBouttonsZoomHome(){
+function afficherBoutonsZoomHome(){
   var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
   controlZoomHome.addTo(mapFranceMetropolitaine);
 }
@@ -544,7 +530,6 @@ function obtenirCouleur(d) {
       }
     }
     return colors[colors.length-1];
-
 }
 
 /*
@@ -559,9 +544,9 @@ function style(feature) {
   if (choixZone.choixzone.value == "commune" && mapFranceMetropolitaine.getZoom() <= 7) {
     return {
       fillColor: color,
-      weight: 0,
+      weight: 1,
       opacity: 1,
-      color: 'white',
+      color: color,
       dashArray: '3',
       fillOpacity: 0.7,
       fill: true
@@ -868,9 +853,9 @@ function getCentroid(polygone){
 Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
-function onLoadTopoJSON(){
-  load_fichier_topoJSON().then(majGeometrie);
-  load_fichier_topoJSON("departements").then(load_fichier_topoJSON("communes"));
+function chargerAfficherGeometriesOnLoad(){
+  chargerDecompresserTopoJSON().then(majGeometrie);
+  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
 }
 
 /*
@@ -881,11 +866,11 @@ function onLoad() {
   majChoixCouleurPalette();
   majPaletteCouleur();
   ajouterEchelle();
-  afficherBouttonsZoomHome();
-  onLoadTopoJSON();
+  afficherBoutonsZoomHome();
+  chargerAfficherGeometriesOnLoad();
   zoomSelonBounds();
   bloquerFonctionnalitesMapsOutreMer();
-  ajouterLayers();
+  ajouterFondsDeCartes();
   afficherCartouche(mapFranceMetropolitaine);
   afficherLegende();
 }
@@ -894,7 +879,7 @@ function onLoad() {
 
 window.onload = onLoad;
 choixZone.addEventListener('click',onClickChoixZone);
-mapFranceMetropolitaine.on('zoom',restreindre_donnees);
+mapFranceMetropolitaine.on('zoom',restreindreDonneesSelonZoom);
 
 choixMode.addEventListener("change",majGeometrie);
 choixCouleurPalette.addEventListener("change",majGeometrie);
