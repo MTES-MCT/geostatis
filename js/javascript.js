@@ -211,6 +211,8 @@ var unite; //Unité associée à la statistique
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
+var miniMap; //Variable liée à la mini-map
+var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
 
@@ -688,11 +690,29 @@ function afficherCartouche(mapObject) {
 }
 
 /*
-Création d'une mini-carte pour savoir où se situe l'utilisateur dans la France métropolitaine
+Création d'une mini-carte pour savoir où se situe l'utilisateur dans la France métropolitaine.
+Elle s'affiche à partir d'un certain niveau de zoom minimal.
+Elle est enlevée à partir d'un certain niveau de zoom maximal.
 */
 function afficherMiniMap(){
-  var titreMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
-  var miniMap = new L.Control.MiniMap(titreMiniMap).addTo(mapFranceMetropolitaine);
+  var niveauZoom = mapFranceMetropolitaine.getZoom();
+
+  //Affichage de la mini-map si le niveau de zoom est supérieur ou égal à 7 et qu'elle n'est pas encore affichée
+  if (niveauZoom >= 7 && !miniMapAffichee){
+
+    //Création des paramètres de la mini-map
+    var donneesMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
+
+    //Création de la carte
+    miniMap = new L.Control.MiniMap(donneesMiniMap).addTo(mapFranceMetropolitaine);
+    miniMapAffichee = true; //Indication de la présence de la carte
+  }
+  //Supression de la mini-map
+  else if (niveauZoom < 7 && miniMapAffichee){
+    mapFranceMetropolitaine.removeControl(miniMap);
+    miniMapAffichee = false; //Indication de l'absence de la carte
+  }
+
 }
 
 /*------------------------Sélection des palettes------------------------------*/
@@ -895,7 +915,7 @@ function onLoad() {
 window.onload = onLoad;
 choixZone.addEventListener('click',onClickChoixZone);
 mapFranceMetropolitaine.on('zoom',restreindreDonneesSelonZoom);
-
+mapFranceMetropolitaine.on('zoom',afficherMiniMap)
 choixMode.addEventListener("change",majGeometrie);
 choixCouleurPalette.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
