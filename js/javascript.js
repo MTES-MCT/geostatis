@@ -177,7 +177,7 @@ var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
 var affichageStats = document.getElementById("affichageStats");
 var choixMode = document.getElementById("choixMode");
-var choixCouleurPalette = document.getElementById("choixCouleurPalette");
+var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
 var statAffichee = document.getElementById("statAffichee");
 var metadonneesStat = document.getElementById("metadonneesStat");
@@ -195,9 +195,7 @@ var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
 
 var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
 
-var controlLegende = L.control({position: 'bottomleft'}); //Légende
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de géométries JSON
-var controlEchelle = L.control.scale({imperial:false, position: 'bottomright'}); //Échelle
 var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
@@ -285,7 +283,7 @@ function majMode(){
 Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
 */
 function majPaletteCouleur(){
-  var i = choixCouleurPalette.value;
+  var i = choixPaletteCouleur.value;
   colors = colorPalettes[i].couleurs;
 }
 
@@ -750,6 +748,7 @@ function creerLegende() {
 Fonction permettant d'afficher la légende
 */
 function afficherLegende() {
+  var controlLegende = L.control({position: 'bottomleft'}); //Légende
   controlLegende.onAdd = function (map) {
     return creerLegende();
   };
@@ -801,8 +800,9 @@ function afficherMiniMap(){
 /*
 Ajout d'une échelle sur la carte de la France métropolitaine
 */
-function afficherEchelle() {
-  controlEchelle.addTo(mapFranceMetropolitaine);
+function afficherEchelleGraphique() {
+  var controlEchelleGraphique = L.control.scale({imperial:false, position: 'bottomright'}); //Échelle
+  controlEchelleGraphique.addTo(mapFranceMetropolitaine);
 }
 
 /*
@@ -820,11 +820,11 @@ function afficherBoutonsZoomHome(){
 Fonction permettant de faire la liste des palettes de couleurs disponibles dans
 le fichier HTML
 */
-function remplirChoixCouleurPalette(){
-  choixCouleurPalette.innerHTML = "";
+function remplirChoixPaletteCouleur(){
+  choixPaletteCouleur.innerHTML = "";
 
   for (var i=0;i<Object.keys(colorPalettes).length;i++){
-    choixCouleurPalette.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
+    choixPaletteCouleur.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
   }
 }
 
@@ -836,9 +836,9 @@ Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
   remplirListeStats();
-  remplirChoixCouleurPalette();
+  remplirChoixPaletteCouleur();
   majPaletteCouleur();
-  afficherEchelle();
+  afficherEchelleGraphique();
   afficherMiniMap();
   afficherBoutonsZoomHome();
   chargerAfficherGeometriesOnLoad();
@@ -856,6 +856,6 @@ choixEchelle.addEventListener('click',onClickChoixEchelle);
 mapFranceMetropolitaine.on('zoom',restreindreChoixEchelleSelonZoom);
 
 choixMode.addEventListener("change",majGeometrie);
-choixCouleurPalette.addEventListener("change",majGeometrie);
+choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
