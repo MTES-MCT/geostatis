@@ -167,9 +167,6 @@ function ajouterFondsDeCartes() {
 
 /*-------------------------------Variables globales---------------------------*/
 
-var titreMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
-var miniMap = new L.Control.MiniMap(titreMiniMap).addTo(mapFranceMetropolitaine);
-
 //Ensemble des balises du fichier html
 var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
@@ -255,6 +252,7 @@ function majStats(){
   if (statsJson != '') {
     promesse = obtenirStats();
   } else {
+    metadonneesStat.innerHTML = "Statistique non disponible pour ce niveau.";
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
     }
@@ -729,9 +727,20 @@ function creerLegende() {
 
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
+    var borneInf = d3.format(",")(precisionDecimale(grades[i], 2));
+    var borneSup = d3.format(",")(precisionDecimale(grades[i + 1], 2));
+
+    //Syntaxe des nombres à la française
+    borneInf = borneInf.replace(/,/g, " ").replace(".", ",");
+    borneSup = borneSup.replace(/,/g, " ").replace(".", ",");
+
+    if (borneSup == "NaN"){
+      borneSup = '+';
+    }
+
     div.innerHTML +=
         '<i style="background:' + obtenirCouleur(grades[i] + 1) + '"></i> ' +
-        precisionDecimale(grades[i], 2) + (precisionDecimale(grades[i + 1], 2) ? ' &ndash; ' + precisionDecimale(grades[i + 1], 2) + '<br>' : '+');
+        borneInf + ' &ndash; ' + borneSup + '<br>';
   }
 
   return div;
@@ -770,6 +779,7 @@ function afficherCartouche(mapObject) {
     var valeurStat = "Non connue";
     if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
       valeurStat = parseFloat(properties.stats);
+      valeurStat = d3.format(",")(valeurStat).replace(/,/g, " ").replace(".", ","); //Mise en syntaxe française de la valeur numérique
     }
 
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
@@ -778,6 +788,14 @@ function afficherCartouche(mapObject) {
   };
 
   controlInfo.addTo(mapObject); //Ajout de l'objet sur la carte
+}
+
+/*
+Création d'une mini-carte pour savoir où se situe l'utilisateur dans la France métropolitaine
+*/
+function afficherMiniMap(){
+  var titreMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
+  var miniMap = new L.Control.MiniMap(titreMiniMap).addTo(mapFranceMetropolitaine);
 }
 
 /*
@@ -821,6 +839,7 @@ function onLoad() {
   remplirChoixCouleurPalette();
   majPaletteCouleur();
   afficherEchelle();
+  afficherMiniMap();
   afficherBoutonsZoomHome();
   chargerAfficherGeometriesOnLoad();
   zoomSelonBounds();
