@@ -199,6 +199,7 @@ var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de g
 var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
+var controlLegende = L.control({position: 'bottomleft'}); //Légende
 var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var echelleAffichee = 'region';
 var stats;
@@ -206,6 +207,7 @@ var statsMetadata = null;
 var places;
 var valeurs;
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
+var geostatsObject = new geostats();
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
 
@@ -435,6 +437,9 @@ function obtenirArrayNumerique(array){
       nouvelArray.push(array[i]);
     }
   }
+
+  geostatsObject.setSerie(nouvelArray);
+
   return nouvelArray;
 }
 
@@ -564,49 +569,19 @@ function obtenirBornes(){
     grades = [];
   }
   else if (mode == 'intervallesEgaux'){
-    obtenirBornesAvecIntervallesEgaux();
+    grades = geostatsObject.getClassEqInterval(valeurNombreClasses).slice(0, -1);
   }
   else if (mode == 'effectifsEgaux'){
-    obtenirBornesAvecEffectifsEgaux();
+    grades = geostatsObject.getClassQuantile(valeurNombreClasses).slice(0, -1);
+  }
+  else if (mode == 'ecartType'){
+    grades = geostatsObject.getClassStdDeviation(valeurNombreClasses).slice(0, -1);
+  }
+  else if (mode == 'rupturesNaturelles'){
+    grades = geostatsObject.getClassJenks(valeurNombreClasses).slice(0, -1);
   }
   else{
     //Voir ce qu'il faut faire
-  }
-}
-
-/*
-Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
-"Intervalles Égaux" est choisi
-*/
-function obtenirBornesAvecIntervallesEgaux(){
-    var minStats = Math.min.apply(Math, valeursNumeriques);
-    var maxStats = Math.max.apply(Math, valeursNumeriques);
-    var taille = (maxStats-minStats)/valeurNombreClasses;
-    var tempGrades = minStats;
-
-    for (var i=0;i<valeurNombreClasses;i++){
-
-      grades.push(tempGrades);
-      tempGrades += taille;
-    }
-}
-
-/*
-Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
-"Effectif Égaux" est choisi
-*/
-function obtenirBornesAvecEffectifsEgaux(){
-  //Tri des valeurs dans l'ordre numérique
-  valeursNumeriques.sort(function(a,b) { return a - b;});
-
-  var lengthValeurs = valeursNumeriques.length;
-  var tailleClasse = lengthValeurs/valeurNombreClasses;
-
-  var i = 0;
-
-  while (i<lengthValeurs) {
-    grades.push(valeursNumeriques[parseInt(i)]);
-    i += tailleClasse;
   }
 }
 
@@ -748,7 +723,6 @@ function creerLegende() {
 Fonction permettant d'afficher la légende
 */
 function afficherLegende() {
-  var controlLegende = L.control({position: 'bottomleft'}); //Légende
   controlLegende.onAdd = function (map) {
     return creerLegende();
   };
@@ -835,18 +809,17 @@ function remplirChoixPaletteCouleur(){
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
+  ajouterFondsDeCartes();
+  zoomSelonBounds();
+  bloquerFonctionnalitesMapsOutreMer();
+  chargerAfficherGeometriesOnLoad();
   remplirListeStats();
   remplirChoixPaletteCouleur();
   majPaletteCouleur();
   afficherEchelleGraphique();
   afficherMiniMap();
   afficherBoutonsZoomHome();
-  chargerAfficherGeometriesOnLoad();
-  zoomSelonBounds();
-  bloquerFonctionnalitesMapsOutreMer();
-  ajouterFondsDeCartes();
   afficherCartouche(mapFranceMetropolitaine);
-  afficherLegende();
 }
 
 /*------------------------Appel aux différentes fonctions---------------------*/
