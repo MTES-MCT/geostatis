@@ -153,14 +153,16 @@ function bloquerFonctionnalitesMapsOutreMer() {
 Fonction permettant l'ajout des couches sur les cartes
 */
 function ajouterFondsDeCartes() {
+  //Url du serveur de fonds de carte
+  url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png'
   //Ajout de la couche fond de carte France Métropolitaine
-  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapFranceMetropolitaine);
+  L.tileLayer(url).addTo(mapFranceMetropolitaine);
   //Ajout de la couche fond de carte sur les DROM
-  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapGuadeloupe);
-  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapMartinique);
-  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapGuyane);
-  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapReunion);
-  L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png').addTo(mapMayotte);
+  L.tileLayer(url).addTo(mapGuadeloupe);
+  L.tileLayer(url).addTo(mapMartinique);
+  L.tileLayer(url).addTo(mapGuyane);
+  L.tileLayer(url).addTo(mapReunion);
+  L.tileLayer(url).addTo(mapMayotte);
 }
 
 /*-------------------------------Variables globales---------------------------*/
