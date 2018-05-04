@@ -193,6 +193,11 @@ var layerReunion; //Objet layer GeoJSON de la Réunion affiché sur la carte
 var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
 
 var layerCercle = L.layerGroup(); //Objet layerGroup contenant les cercles propo
+var layerCercleGuadeloupe = L.layerGroup();
+var layerCercleMartinique = L.layerGroup();
+var layerCercleGuyane = L.layerGroup();
+var layerCercleReunion = L.layerGroup();
+var layerCercleMayotte = L.layerGroup();
 
 var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
 
@@ -437,17 +442,43 @@ function ajouterGeojsonLayers() {
     mapGuyane.removeLayer(layerGuyane);
     mapReunion.removeLayer(layerReunion);
     mapMayotte.removeLayer(layerMayotte);
+    layerCercle.clearLayers();
+    layerCercleGuadeloupe.clearLayers();
+    layerCercleMartinique.clearLayers();
+    layerCercleGuyane.clearLayers();
+    layerCercleReunion.clearLayers();
+    layerCercleMayotte.clearLayers();
     mapFranceMetropolitaine.removeLayer(layerCercle);
+    mapGuadeloupe.removeLayer(layerCercleGuadeloupe);
+    mapMartinique.removeLayer(layerCercleMartinique);
+    mapGuyane.removeLayer(layerCercleGuyane);
+    mapReunion.removeLayer(layerCercleReunion);
+    mapMayotte.removeLayer(layerCercleMayotte);
   }
 
   //Ajout des différents objets sur les cartes
   layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(mapFranceMetropolitaine);
-  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapGuadeloupe);
-  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapMartinique);
-  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapGuyane);
-  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapReunion);
-  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapMayotte);
-  layerCercle.addTo(mapFranceMetropolitaine);
+  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureGuadeloupe}).addTo(mapGuadeloupe);
+  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMartinique}).addTo(mapMartinique);
+  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureGuyane}).addTo(mapGuyane);
+  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
+  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
+  if (choixCercle.choixcercle.value=="cercles"){
+    layerCercle.addTo(mapFranceMetropolitaine);
+    layerCercleGuadeloupe.addTo(mapGuadeloupe);
+    layerCercleMartinique.addTo(mapMartinique);
+    layerCercleGuyane.addTo(mapGuyane);
+    layerCercleReunion.addTo(mapReunion);
+    layerCercleMayotte.addTo(mapMayotte);
+    layerMetropole.bringToFront();
+    layerGuadeloupe.bringToFront();
+    layerMartinique.bringToFront();
+    layerGuyane.bringToFront();
+    layerReunion.bringToFront();
+    layerMayotte.bringToFront();
+    // var i=0;
+    // layerCercleDROM.eachLayer(function(layer){console.log(layer);});
+  }
 }
 
 /*
@@ -549,6 +580,17 @@ function style(feature) {
   if (!isNaN(valeur) && valeur != null && valeur != "") {
     color = obtenirCouleur(valeur);
   }
+  if (choixCercle.choixcercle.value=="cercles"){
+    return {
+      fillColor: color,
+      weight: 1,
+      opacity: 1,
+      color: 'black',
+      dashArray: '3',
+      fillOpacity: 0,
+      fill: true
+    };
+  }
   if (choixZone.choixzone.value == "commune" && mapFranceMetropolitaine.getZoom() <= 7) {
     return {
       fillColor: color,
@@ -577,12 +619,23 @@ Surbrillance de la carte
 function highlightFeature(e) {
   var layer = e.target;
 
-  layer.setStyle({
-    weight: 3,
-    color: '#000000',
-    dashArray: '',
-    fillOpacity: 0.8
-  });
+  if (choixCercle.choixcercle.value=="cercles"){
+    layer.setStyle({
+      fillColor: '#3498db',
+      weight: 3,
+      opacity: 1,
+      color: '#2c3e50',
+      dashArray: '',
+      fillOpacity: 0.2
+    });
+  }else{
+    layer.setStyle({
+      weight: 3,
+      color: '#000000',
+      dashArray: '',
+      fillOpacity: 0.8
+    });
+  }
 
   if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
     layer.bringToFront();
@@ -612,25 +665,90 @@ function onEachFeature(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
+  if (choixCercle.choixcercle.value=="cercles"){
+    creerCercle(feature, layer, layerCercle);
+  }
+}
+
+/*
+Fonction gérant les événements liés à la carte pour la Martinique
+*/
+function onEachFeatureMartinique(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+  });
+  if (choixCercle.choixcercle.value=="cercles"){
+    creerCercle(feature, layer, layerCercleMartinique);
+  }
+}
+
+/*
+Fonction gérant les événements liés à la carte pour la Martinique
+*/
+function onEachFeatureGuadeloupe(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+  });
+  if (choixCercle.choixcercle.value=="cercles"){
+    creerCercle(feature, layer, layerCercleGuadeloupe);
+  }
+}
+
+/*
+Fonction gérant les événements liés à la carte pour la Martinique
+*/
+function onEachFeatureGuyane(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+  });
+  if (choixCercle.choixcercle.value=="cercles"){
+    creerCercle(feature, layer, layerCercleGuyane);
+  }
+}
+
+/*
+Fonction gérant les événements liés à la carte pour la Martinique
+*/
+function onEachFeatureReunion(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+  });
+  if (choixCercle.choixcercle.value=="cercles"){
+    creerCercle(feature, layer, layerCercleReunion);
+  }
+}
+
+/*
+Fonction gérant les événements liés à la carte pour la Martinique
+*/
+function onEachFeatureMayotte(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+  });
+  if (choixCercle.choixcercle.value=="cercles"){
+    creerCercle(feature, layer, layerCercleMayotte);
+  }
+}
+
+/*
+Fonction créant un cercle proportionnel dans layerCercle
+*/
+function creerCercle(feature, layer, layerC){
   if(choixCercle.choixcercle.value=="cercles"){
     var stat = feature.properties["stats"];
     var centroid = getCentroid(feature);
-    console.log(stat,centroid);
-    console.log(maxStats);
-    // layerCercle.addLayer(L.circleMarker(centroid, {
-    //   radius : setCircleSize(stat, maxStats),
-    //   color : '#005824',
-    //   fillOpacity: 0.6,
-    //   fillColor: '#41AE76'
-    // }));
     marq_circ=L.circleMarker(centroid, {
       radius : setCircleSize(stat, maxStats),
-      color : '#005824',
-      fillOpacity: 0.8,
-      fillColor: '#41AE76'
-    });
-    layerCercle.addLayer(marq_circ);
-    console.log(layerCercle.hasLayer(marq_circ));
+      color : '#7d3c98',
+      weight : 1,
+      fillOpacity: 0.6,
+      fillColor: '#bb8fce'
+    }).addTo(layerC);
   }
 }
 
