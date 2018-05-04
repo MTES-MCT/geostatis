@@ -207,6 +207,7 @@ var stats;
 var statsMetadata = null;
 var places;
 var valeurs;
+var unite; //Unité associée à la statistique
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
@@ -282,10 +283,17 @@ function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
 Fonction pour permettre d'afficher les métadonnées de la statistique
 */
 function afficherMetadonneesStats(){
+
+  //Obtention de l'unité
+  unite = statsMetadata.unit_name;
+  if (unite == undefined){
+    unite = "";
+  }
+
   if (statsMetadata != null){
   metadonneesStat.innerHTML = statsMetadata.stat_name;
     for (x in statsMetadata){
-      if (x!="stat_name" && x!="scale"){
+      if (x!="stat_name" && x!="scale" && x!="unit_name"){
         metadonneesStat.innerHTML += "<br>" + x + " : " +  statsMetadata[x];
       }
     }
@@ -403,6 +411,7 @@ function obtenirStats() {
 
   var promesse = d3.json(statsJson).then(function(stats) {
     statsMetadata = stats.metadata;
+
     afficherMetadonneesStats();
 
     if (stats.metadata.scale == choixZone.choixzone.value) {
@@ -492,12 +501,6 @@ function afficherBoutonsZoomHome(){
   var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
   controlZoomHome.addTo(mapFranceMetropolitaine);
 }
-
-/*
-Fonction permettant d'obtenir la couleur d'un polygone
-en fonction d'une échelles de valeurs (grades) et de couleurs (colors)
- */
-//var obtenirCouleur = d3.scaleThreshold().domain(grades).range(colors);
 
 /*
 Fonction permettant d'obtenir la couleur d'un polygone
@@ -608,12 +611,9 @@ function creerLegende() {
 
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
-    var borneInf = d3.format(",")(precisionDecimale(grades[i], 2));
-    var borneSup = d3.format(",")(precisionDecimale(grades[i + 1], 2));
 
-    //Syntaxe des nombres à la française
-    borneInf = borneInf.replace(/,/g, " ").replace(".", ",");
-    borneSup = borneSup.replace(/,/g, " ").replace(".", ",");
+    var borneInf = valeurStat = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i], 2));
+    var borneSup = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i + 1], 2));
 
     if (borneSup == "NaN"){
       borneSup = '+';
@@ -627,6 +627,12 @@ function creerLegende() {
   return div;
 }
 
+/*
+Fonction pour convertir les nombres avec la syntaxe française
+*/
+function syntaxeNumeriqueFrancaise(nombre){
+  return d3.format(",")(nombre).replace(/,/g, " ").replace(".", ",");
+}
 /*
 Fonction permettant d'afficher la légende
 */
@@ -663,13 +669,18 @@ function afficherCartouche(mapObject) {
   */
   controlInfo.update = function (properties) {
     var valeurStat = "Non connue";
+    var nomUnite = "";
+
     if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
       valeurStat = parseFloat(properties.stats);
-      valeurStat = d3.format(",")(valeurStat).replace(/,/g, " ").replace(".", ","); //Mise en syntaxe française de la valeur numérique
+      valeurStat = syntaxeNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
+    }
+    if (valeurStat != "Non connue"){
+      nomUnite = unite;
     }
 
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
-        '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat
+        '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat + " " + nomUnite
         : 'Survoler une région');
   };
 
