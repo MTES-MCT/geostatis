@@ -217,7 +217,7 @@ var valeurNombreClasses; //Nombre de classes
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
 
 
-/*------------------------Lecture d'un fichier JSON---------------------------*/
+/*------------------------Gestion des mises à jour géométrie et stats---------------------------*/
 
 /*
 Fonction permettant le changement de couche géométrique
@@ -276,6 +276,16 @@ function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
     topoJsonParEchelle[scale] = JSON.parse(LZString.decompressFromUTF16(data));
   });
   return promesse;
+}
+
+
+/*
+Fonction qui s'effectuera au chargement de la page pour afficher les données
+liées au TopoJSON
+*/
+function chargerAfficherGeometriesOnLoad(){
+  chargerDecompresserTopoJSON().then(majGeometrie);
+  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
 }
 
 /*------------------------Gestion des statistiques----------------------------*/
@@ -454,24 +464,6 @@ en fonction du niveau de zoom
 function restreindreDonneesSelonZoom() {
   var niveauZoom = mapFranceMetropolitaine.getZoom();
 
-  // //Interdiction de l'accès aux communes
-  // if (niveauZoom < 7) {
-  //   /*
-  //   On enlève la carte des communes si le niveau de zoom est inférieur à 7.
-  //   On met celle des départements par défaut
-  //   */
-  //   if (choixZone.choixzone.value == "commune") {
-  //     departement.checked = true;
-  //     majGeometrie();
-  //   }
-  //
-  //   //On cache la case des communes
-  //   choixCommune.style.display = "none";
-  //   choixDepartement.style.display = "block";
-  //   choixRegion.style.display = "block";
-  //
-  // } else if (niveauZoom < 8) {
-
   if (niveauZoom < 8) {
     //On affiche toutes les possibilités
     choixCommune.style.display = "block";
@@ -496,24 +488,6 @@ function restreindreDonneesSelonZoom() {
 /*--------------------Interactivité avec la carte, design---------------------*/
 
 /*
-Ajout d'une échelle sur la carte de la France métropolitaine
-*/
-function ajouterEchelle() {
-  controlEchelle.addTo(mapFranceMetropolitaine);
-}
-
-/*
-Ajout d'une série de boutons avec 3 choix de zoom :
-- zoomer
-- dézoomer
-- retourner à la vue initiale (zoom à 5.5)
-*/
-function afficherBoutonsZoomHome(){
-  var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
-  controlZoomHome.addTo(mapFranceMetropolitaine);
-}
-
-/*
 Fonction permettant d'obtenir la couleur d'un polygone
 en fonction d'une échelles de valeurs (grades) et de couleurs (colors)
  */
@@ -524,12 +498,11 @@ Fonction permettant d'obtenir la couleur d'un polygone
 en fonction d'une échelle de valeurs et de couleurs
  */
 function obtenirCouleur(d) {
-
+    if (isNaN(d)){
+      return '#AAAAAA';
+    }
     for (var i = 0; i < grades.length-1; i++) {
-      if (isNaN(d)){
-        return '#AAAAAA';
-      }
-      else if (d >= grades[i] && d < grades[i+1]){
+      if (d >= grades[i] && d < grades[i+1]){
         return colors[i];
       }
     }
@@ -551,7 +524,6 @@ function style(feature) {
       weight: 1,
       opacity: 1,
       color: color,
-      dashArray: '3',
       fillOpacity: 0.7,
       fill: true
     };
@@ -721,6 +693,25 @@ function afficherMapGlobale(mapObject) {
   controlInfo.addTo(mapObject); //Ajout de l'objet sur la carte
 }
 
+/*
+Ajout d'une échelle sur la carte de la France métropolitaine
+*/
+function afficherEchelle() {
+  controlEchelle.addTo(mapFranceMetropolitaine);
+}
+
+/*
+Ajout d'une série de boutons avec 3 choix de zoom :
+- zoomer
+- dézoomer
+- retourner à la vue initiale (zoom à 5.5)
+*/
+function afficherBoutonsZoomHome(){
+  var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
+  controlZoomHome.addTo(mapFranceMetropolitaine);
+}
+
+
 /*------------------------Sélection des palettes------------------------------*/
 
 
@@ -889,16 +880,6 @@ function getCentroid(polygone){
     return [ cxTimes6SignedArea / sixSignedArea, cyTimes6SignedArea / sixSignedArea];
 }
 
-
-/*
-Fonction qui s'effectuera au chargement de la page pour afficher les données
-liées au TopoJSON
-*/
-function chargerAfficherGeometriesOnLoad(){
-  chargerDecompresserTopoJSON().then(majGeometrie);
-  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
-}
-
 /*
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
@@ -906,7 +887,7 @@ function onLoad() {
   remplirListeStats();
   majChoixCouleurPalette();
   majPaletteCouleur();
-  ajouterEchelle();
+  afficherEchelle();
   afficherBoutonsZoomHome();
   chargerAfficherGeometriesOnLoad();
   zoomSelonBounds();
