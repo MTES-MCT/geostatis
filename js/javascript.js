@@ -252,6 +252,7 @@ function majStats(){
   if (statsJson != '') {
     promesse = obtenirStats();
   } else {
+    metadonneesStat.innerHTML = "Statistique non disponible pour ce niveau.";
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
     }
@@ -451,24 +452,6 @@ en fonction du niveau de zoom
 function restreindreDonneesSelonZoom() {
   var niveauZoom = mapFranceMetropolitaine.getZoom();
 
-  // //Interdiction de l'accès aux communes
-  // if (niveauZoom < 7) {
-  //   /*
-  //   On enlève la carte des communes si le niveau de zoom est inférieur à 7.
-  //   On met celle des départements par défaut
-  //   */
-  //   if (choixZone.choixzone.value == "commune") {
-  //     departement.checked = true;
-  //     majGeometrie();
-  //   }
-  //
-  //   //On cache la case des communes
-  //   choixCommune.style.display = "none";
-  //   choixDepartement.style.display = "block";
-  //   choixRegion.style.display = "block";
-  //
-  // } else if (niveauZoom < 8) {
-
   if (niveauZoom < 8) {
     //On affiche toutes les possibilités
     choixCommune.style.display = "block";
@@ -625,9 +608,20 @@ function creerLegende() {
 
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
+    var borneInf = d3.format(",")(precisionDecimale(grades[i], 2));
+    var borneSup = d3.format(",")(precisionDecimale(grades[i + 1], 2));
+
+    //Syntaxe des nombres à la française
+    borneInf = borneInf.replace(/,/g, " ").replace(".", ",");
+    borneSup = borneSup.replace(/,/g, " ").replace(".", ",");
+
+    if (borneSup == "NaN"){
+      borneSup = '+';
+    }
+
     div.innerHTML +=
         '<i style="background:' + obtenirCouleur(grades[i] + 1) + '"></i> ' +
-        precisionDecimale(grades[i], 2) + (precisionDecimale(grades[i + 1], 2) ? ' &ndash; ' + precisionDecimale(grades[i + 1], 2) + '<br>' : '+');
+        borneInf + ' &ndash; ' + borneSup + '<br>';
   }
 
   return div;
@@ -671,6 +665,7 @@ function afficherCartouche(mapObject) {
     var valeurStat = "Non connue";
     if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
       valeurStat = parseFloat(properties.stats);
+      valeurStat = d3.format(",")(valeurStat).replace(/,/g, " ").replace(".", ","); //Mise en syntaxe française de la valeur numérique
     }
 
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
@@ -703,7 +698,6 @@ function majChoixCouleurPalette(){
     choixCouleurPalette.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
   }
 }
-
 
 /*------------------------Sélection de la couche------------------------------*/
 
