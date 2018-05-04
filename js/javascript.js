@@ -167,9 +167,6 @@ function ajouterFondsDeCartes() {
 
 /*-------------------------------Variables globales---------------------------*/
 
-var titreMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
-var miniMap = new L.Control.MiniMap(titreMiniMap).addTo(mapFranceMetropolitaine);
-
 //Ensemble des balises du fichier html
 var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
@@ -685,40 +682,11 @@ function afficherCartouche(mapObject) {
 }
 
 /*
-Fonction permettant d'afficher une petite carte permettant de se localiser
+Création d'une mini-carte pour savoir où se situe l'utilisateur dans la France métropolitaine
 */
-function afficherMapGlobale(mapObject) {
-
-  var map = mapObject;
-
-  /* Pop-up sur le côté avec les infos de la zone étudiée */
-  controlInfo = L.control({position: 'topright'});
-
-  controlInfo.onAdd = function (mapFranceMetropolitaine) {
-    this._div = L.DomUtil.create('div', 'controlInfo'); // Création d'une div de classe INFO
-    this.update();
-    return this._div;
-  };
-
-  /*
-  Méthode pour afficher les données principales dans la box en haut à droite
-  les informations principales :
-  - nom de la zone survolée ;
-  - code INSEE de cette zone ;
-  - valeur statistique associée à la zone. Non connue si elle n'existe pas.
-  */
-  controlInfo.update = function (properties) {
-    var valeurStat = "Non connue";
-    if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
-      valeurStat = parseFloat(properties.stats);
-    }
-
-    this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
-        '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat
-        : 'Survoler une région');
-  };
-
-  controlInfo.addTo(mapObject); //Ajout de l'objet sur la carte
+function afficherMiniMap(){
+  var titreMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
+  var miniMap = new L.Control.MiniMap(titreMiniMap).addTo(mapFranceMetropolitaine);
 }
 
 /*------------------------Sélection des palettes------------------------------*/
@@ -907,6 +875,7 @@ function onLoad() {
   majChoixCouleurPalette();
   majPaletteCouleur();
   ajouterEchelle();
+  afficherMiniMap();
   afficherBoutonsZoomHome();
   chargerAfficherGeometriesOnLoad();
   zoomSelonBounds();
