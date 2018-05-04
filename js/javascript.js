@@ -210,7 +210,7 @@ var colors;
 var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var zoneAffichee = 'region';
 var stats;
-var maxStats;
+var maxStats=NaN;
 var statsMetadata = null;
 var places;
 var valeurs;
@@ -463,7 +463,7 @@ function ajouterGeojsonLayers() {
   layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureGuyane}).addTo(mapGuyane);
   layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
   layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (choixCercle.choixcercle.value=="cercles" && choixStat.value!='-------'){
     layerCercle.addTo(mapFranceMetropolitaine);
     layerCercleGuadeloupe.addTo(mapGuadeloupe);
     layerCercleMartinique.addTo(mapMartinique);
@@ -762,11 +762,21 @@ function precisionDecimale(nombre, precision) {
 
 //Fonction permettant de créer la syntaxe HTML pour la légende
 function creerLegende() {
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (choixCercle.choixcercle.value=="cercles" && choixStat.value!='-------'){
     var div = L.DomUtil.create('div', 'info legend'),
       labels = [];
 
-    div.innerHTML += '<i style="background:#AAAAAA"></i>NC<br>'
+    var r2=10
+    var v2=(r2/20*Math.sqrt(maxStats))**2
+
+    var legendeCercle = "<svg height='100' width='100'>";
+    legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
+    legendeCercle += "<text x='52' y='45' fill='black'>"+maxStats.toString()+"</text>";
+    legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
+    legendeCercle += "<text x='47' y='75' fill='black'>"+v2.toString()+"</text>";
+    legendeCercle += "</svg>";
+
+    div.innerHTML = legendeCercle
 
   }else{
   var div = L.DomUtil.create('div', 'info legend'),
