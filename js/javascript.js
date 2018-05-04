@@ -481,7 +481,6 @@ function restreindreDonneesSelonZoom() {
       departement.checked = true;
       majGeometrie();
     }
-
     //On cache la case des régions
     choixCommune.style.display = "block";
     choixDepartement.style.display = "block";
@@ -541,7 +540,7 @@ function style(feature) {
   if (!isNaN(valeur) && valeur != null && valeur != "") {
     color = obtenirCouleur(valeur);
   }
-  if (choixZone.choixzone.value == "commune" && mapFranceMetropolitaine.getZoom() <= 7) {
+  if (choixZone.choixzone.value == "commune") {
     return {
       fillColor: color,
       weight: 1,
