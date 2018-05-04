@@ -1,5 +1,15 @@
 body{
   font: 12px/12px Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+#titrePrincipal{
+text-align: center;
+font-size: 20px;
+height: 30px;
+margin: auto;
+padding: auto;
 }
 
 #conteneurMaps{
@@ -61,21 +71,11 @@ body{
   display: flex;
   flex-direction: row;
   font-size: 15px;
-  justify-content: space-between;
 }
 
 #mapsEtParametresPersonnalisation{
   display: flex;
   flex-direction: column;
-}
-
-body{
-  display: flex;
-  flex-direction: row;
-}
-
-#affichageStats{
-  border: 2px solid black;
 }
 
 .menuChoix{

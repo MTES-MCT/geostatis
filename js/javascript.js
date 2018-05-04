@@ -167,7 +167,9 @@ function ajouterFondsDeCartes() {
 
 /*-------------------------------Variables globales---------------------------*/
 
+var mapsEtParametresPersonnalisation = document.getElementById("mapsEtParametresPersonnalisation");
 //Ensemble des balises du fichier html
+var titrePrincipal = document.getElementById("titrePrincipal");
 var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
 var choixCommune = document.getElementById("choixCommune");
@@ -175,12 +177,9 @@ var choixZone = document.getElementById("menuChoixZone");
 var region = document.getElementById("region");
 var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
-var affichageStats = document.getElementById("affichageStats");
 var choixMode = document.getElementById("choixMode");
 var choixCouleurPalette = document.getElementById("choixCouleurPalette");
 var choixStat = document.getElementById("choixStat");
-var statAffichee = document.getElementById("statAffichee");
-var metadonneesStat = document.getElementById("metadonneesStat");
 var nombreClasses = document.getElementById("nombreClasses");
 var afficheNombreClasses = document.getElementById("afficheNombreClasses");
 afficheNombreClasses.innerHTML = nombreClasses.value;
@@ -207,7 +206,8 @@ var stats;
 var statsMetadata = null;
 var places;
 var valeurs;
-var unite; //Unité associée à la statistique
+var uniteStat; //Unité associée à la statistique
+var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
@@ -255,7 +255,10 @@ function majStats(){
   if (statsJson != '') {
     promesse = obtenirStats();
   } else {
-    metadonneesStat.innerHTML = "Statistique non disponible pour ce niveau.";
+    recupererMetadonneesStats();
+    console.log("Statistique non disponible pour ce niveau.");
+
+
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
     }
@@ -282,27 +285,34 @@ function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
 /*------------------------Gestion des statistiques----------------------------*/
 
 /*
-Fonction pour permettre d'afficher les métadonnées de la statistique
+Fonction pour permettre de récupérer les métadonnées de la statistique.
+Si elles n'existent pas, on ne donne pas d'unité et le titre est "Création de cartes statistiques"
 */
-function afficherMetadonneesStats(){
+function recupererMetadonneesStats(){
 
   //Obtention de l'unité
-  unite = statsMetadata.unit_name;
-  if (unite == undefined){
-    unite = "";
-  }
-
-  if (statsMetadata != null){
-  metadonneesStat.innerHTML = statsMetadata.stat_name;
-    for (x in statsMetadata){
-      if (x!="stat_name" && x!="scale" && x!="unit_name"){
-        metadonneesStat.innerHTML += "<br>" + x + " : " +  statsMetadata[x];
-      }
+  try{
+    uniteStat = statsMetadata.unit_name;
+    if (uniteStat == undefined){
+      uniteStat = "";
     }
   }
-  else{
-    metadonneesStat.innerHTML = "";
+  catch{
+    uniteStat = "";
   }
+
+  //Obtention du titre
+  try{
+    titreStat = statsMetadata.stat_name;
+    if (titreStat == undefined){
+      titreStat = "Création de cartes statistiques";
+    }
+  }
+  catch{
+    titreStat = "Création de cartes statistiques";
+  }
+
+  titrePrincipal.innerHTML = titreStat;
 }
 
 /*
@@ -414,7 +424,7 @@ function obtenirStats() {
   var promesse = d3.json(statsJson).then(function(stats) {
     statsMetadata = stats.metadata;
 
-    afficherMetadonneesStats();
+    recupererMetadonneesStats();
 
     if (stats.metadata.scale == choixZone.choixzone.value) {
       for (let i=0; i< places.features.length; i++) {
@@ -510,14 +520,16 @@ en fonction d'une échelle de valeurs et de couleurs
  */
 function obtenirCouleur(d) {
 
-    for (var i = 0; i < grades.length-1; i++) {
-      if (isNaN(d)){
-        return '#AAAAAA';
-      }
-      else if (d >= grades[i] && d < grades[i+1]){
-        return colors[i];
-      }
+  //Cas où d n'est pas un nombre
+  if (isNaN(d)){
+    return '#AAAAAA'; //Couleur grise
+  }
+
+  for (var i = 0; i < grades.length-1; i++) {
+    if (d >= grades[i] && d < grades[i+1]){
+      return colors[i];
     }
+  }
     return colors[colors.length-1];
 }
 
@@ -622,7 +634,7 @@ function creerLegende() {
     }
 
     div.innerHTML +=
-        '<i style="background:' + obtenirCouleur(grades[i] + 1) + '"></i> ' +
+        '<i style="background:' + obtenirCouleur(grades[i]) + '"></i> ' +
         borneInf + ' &ndash; ' + borneSup + '<br>';
   }
 
@@ -672,14 +684,20 @@ function afficherCartouche(mapObject) {
   controlInfo.update = function (properties) {
     var valeurStat = "Non connue";
     var nomUnite = "";
+    var nomTitre = "Pas de donnée";
 
     if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
       valeurStat = parseFloat(properties.stats);
       valeurStat = syntaxeNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
     }
     if (valeurStat != "Non connue"){
-      nomUnite = unite;
+      nomUnite = uniteStat;
     }
+
+    if (titreStat != undefined){
+      nomTitre = titreStat;
+    }
+
 
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
         '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat + " " + nomUnite
@@ -835,13 +853,10 @@ function obtenirBornesAvecEffectifsEgaux(){
   valeursNumeriques.sort(function(a,b) { return a - b;});
 
   var lengthValeurs = valeursNumeriques.length;
-  var tailleClasse = lengthValeurs/valeurNombreClasses;
 
-  var i = 0;
-
-  while (i<lengthValeurs) {
-    grades.push(valeursNumeriques[parseInt(i)]);
-    i += tailleClasse;
+  for (var i=0;i<valeurNombreClasses;i++){
+    iQuantile = d3.quantile(valeursNumeriques, (i)/valeurNombreClasses);
+    grades.push(iQuantile);
   }
 
 }
