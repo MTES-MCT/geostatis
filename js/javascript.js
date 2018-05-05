@@ -719,7 +719,8 @@ function afficherMiniMap(){
   if (niveauZoom >= 7 && !miniMapAffichee){
 
     //Création des paramètres de la mini-map
-    var donneesMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
+    var url = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+    var donneesMiniMap = new L.TileLayer(url,{minZoom: 3, maxZoom: 4});
 
     //Création de la carte
     miniMap = new L.Control.MiniMap(donneesMiniMap).addTo(mapFranceMetropolitaine);
