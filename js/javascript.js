@@ -168,6 +168,7 @@ function ajouterFondsDeCartes(url) {
 var mapsEtParametresPersonnalisation = document.getElementById("mapsEtParametresPersonnalisation");
 //Ensemble des balises du fichier html
 var titrePrincipal = document.getElementById("titrePrincipal");
+var sousTitre = document.getElementById("sousTitre");
 var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
 var choixCommune = document.getElementById("choixCommune");
@@ -256,8 +257,6 @@ function majStats(){
     promesse = obtenirStats();
   } else {
     recupererMetadonneesStats();
-    console.log("Statistique non disponible pour ce niveau.");
-
 
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
@@ -421,6 +420,8 @@ Si elles n'existent pas, on ne donne pas d'unité et le titre est "Création de 
 */
 function recupererMetadonneesStats(){
 
+  var sousTitreStat = "";
+
   //Obtention de l'unité
   try{
     uniteStat = statsMetadata.unit_name;
@@ -435,15 +436,22 @@ function recupererMetadonneesStats(){
   //Obtention du titre
   try{
     titreStat = statsMetadata.stat_name;
-    if (titreStat == undefined){
+    if (titreStat == undefined && choixStat.value != "-------"){
       titreStat = "Création de cartes statistiques";
+      sousTitreStat = "Donnée non disponible à cette échelle";
     }
   }
   catch{
     titreStat = "Création de cartes statistiques";
+    if (choixStat.value != "-------"){
+      sousTitreStat = "Donnée non disponible à cette échelle";
+    }
+
   }
 
   titrePrincipal.innerHTML = titreStat;
+  sousTitre.innerHTML = sousTitreStat;
+
 }
 
 /*
