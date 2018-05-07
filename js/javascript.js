@@ -62,6 +62,7 @@ Carte de la Guadeloupe
 var mapGuadeloupe = L.map('mapGuadeloupe', {
   center: [16.2490067,-61.5650444],
   zoom: 8,
+  zoomSnap: 0.25,  // pour permettre d'ajuster finement le zoom aux limites de la carte
   zoomControl:false,
   attributionControl: false
 });
@@ -72,6 +73,7 @@ Carte de la Martinique
 var mapMartinique = L.map('mapMartinique', {
   center: [14.6553,-60.9906],
   zoom: 8,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -82,6 +84,7 @@ Carte de la Guyane
 var mapGuyane = L.map('mapGuyane', {
   center: [4.0039882, -52.9999980],
   zoom: 5,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -92,6 +95,7 @@ Carte de la Réunion
 var mapReunion = L.map('mapReunion', {
   center: [-21.1309332, 55.5265771],
   zoom: 8,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -102,6 +106,7 @@ Carte de Mayotte
 var mapMayotte = L.map('mapMayotte', {
   center: [-12.8230480, 45.1520755],
   zoom: 9,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -855,9 +860,9 @@ function remplirChoixPaletteCouleur(){
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
-  ajouterFondsDeCartes(url);
-  zoomSelonBounds();
   bloquerFonctionnalitesMapsOutreMer();
+  zoomSelonBounds();
+  ajouterFondsDeCartes(url);
   chargerAfficherGeometriesOnLoad();
   remplirListeStats();
   remplirChoixPaletteCouleur();
@@ -872,7 +877,7 @@ function onLoad() {
 
 window.onload = onLoad;
 choixEchelle.addEventListener('click',onClickChoixEchelle);
-mapFranceMetropolitaine.on('zoom',restreindreDonneesSelonZoom);
+mapFranceMetropolitaine.on('zoom',restreindreChoixEchelleSelonZoom);
 mapFranceMetropolitaine.on('zoom',afficherMiniMap)
 choixMode.addEventListener("change",majGeometrie);
 choixPaletteCouleur.addEventListener("change",majGeometrie);
