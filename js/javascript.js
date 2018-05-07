@@ -890,38 +890,26 @@ function precisionDecimale(nombre, precision) {
 
 //Fonction permettant de créer la syntaxe HTML pour la légende
 function creerLegende() {
-  if (choixCercle.choixcercle.value=="cercles" && statExiste){
-    var div = L.DomUtil.create('div', 'info legend'),
-      labels = [];
-
-    var r2=10
-    var v2=(r2/20*Math.sqrt(maxStats))**2
-
-    //Ouverture de la balise SVG
-    var legendeCercle = "<svg id='legendeSvg' height='52'>";
-
-    //Ajout des cercles
-    var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
-    var cercle2 = "<circle cx='25' cy='40' r=" + r2.toString() + " stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
-
-    //Ajout des lignes en pointillé
-    var ligne1 = "<line x1='25' y1='10' x2='60' y2='10' stroke='black' stroke-dasharray='3, 2' />"
-    var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
-
-    //Ajout des textes
-    var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ syntaxeNumeriqueFrancaise(maxStats) + "</text>";
-    var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ syntaxeNumeriqueFrancaise(v2) + "</text>";
-
-    legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2
-
-    //Fermeture de la balise SVG
-    legendeCercle += "</svg>";
-
-    div.innerHTML = legendeCercle;
-
-  }else{
+  //Création de la div liée à la légende
   var div = L.DomUtil.create('div', 'info legend'),
       labels = [];
+
+  //Mise à jour de la légende si on choisit des cercles proportionnels
+  if (choixCercle.choixcercle.value=="cercles" && statExiste){
+    div = remplirLegendeCercle(div);
+  }
+  //Mise à jour de la légende si on choisit de colorier les zones
+  else{
+    div = remplirLegendeCouleur(div);
+  }
+  return div;
+}
+
+/*
+Fonction pour remplir le contenu de la légende dans le cas où on choisit
+de colorier les zones
+*/
+function remplirLegendeCouleur(div){
 
   //Ajout d'une ligne dans la légende pour les valeurs inconnues
   div.innerHTML += '<i style="background:#AAAAAA"></i>NC<br>'
@@ -940,7 +928,41 @@ function creerLegende() {
         '<i style="background:' + obtenirCouleur(grades[i]) + '"></i> ' +
         borneInf + ' &ndash; ' + borneSup + '<br>';
   }
-  }
+
+  return div;
+}
+
+/*
+Fonction pour remplir le contenu de la légende dans le cas où on choisit
+des cercles proportionnels
+*/
+function remplirLegendeCercle(div){
+
+  var r2=10
+  var v2=(r2/20*Math.sqrt(maxStats))**2
+
+  //Ouverture de la balise SVG
+  var legendeCercle = "<svg id='legendeSvg' height='52'>";
+
+  //Ajout des cercles
+  var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
+  var cercle2 = "<circle cx='25' cy='40' r=" + r2.toString() + " stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
+
+  //Ajout des lignes en pointillé
+  var ligne1 = "<line x1='25' y1='10' x2='60' y2='10' stroke='black' stroke-dasharray='3, 2' />"
+  var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
+
+  //Ajout des textes
+  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ syntaxeNumeriqueFrancaise(maxStats) + "</text>";
+  var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ syntaxeNumeriqueFrancaise(v2) + "</text>";
+
+  legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2
+
+  //Fermeture de la balise SVG
+  legendeCercle += "</svg>";
+
+  div.innerHTML = legendeCercle;
+
   return div;
 }
 
