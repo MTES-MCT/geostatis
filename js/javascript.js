@@ -179,9 +179,9 @@ var commune = document.getElementById("commune");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
+var menuChoixNombreClasses = document.getElementById("menuChoixNombreClasses");
 var nombreClasses = document.getElementById("nombreClasses");
 var afficheNombreClasses = document.getElementById("afficheNombreClasses");
-var choixCercle = document.getElementById("menuChoixCercle");
 afficheNombreClasses.innerHTML = nombreClasses.value;
 
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
@@ -290,10 +290,20 @@ function majLegende(){
 }
 
 /*
-Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
+Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné.
+Si "cerclesProportionnels" est sélectionné, il devient impossible de choisir
+le nombre de classes.
 */
 function majMode(){
   mode = choixMode.value;
+  if (mode == "cerclesProportionnels"){
+    nombreClasses.disabled = true;
+    menuChoixNombreClasses.style.display = 'none';
+  }
+  else{
+    nombreClasses.disabled = false;
+    menuChoixNombreClasses.style.display = '';
+  }
 }
 
 /*
@@ -434,7 +444,7 @@ function ajouterGeojsonLayers() {
   layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
   layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
 
-  if (choixCercle.choixcercle.value == "cercles" && statExiste){
+  if (mode == "cerclesProportionnels" && statExiste){
     layerCercle.addTo(mapFranceMetropolitaine);
     layerCercleGuadeloupe.addTo(mapGuadeloupe);
     layerCercleMartinique.addTo(mapMartinique);
@@ -702,8 +712,69 @@ function style(feature) {
   if (!isNaN(valeur) && valeur != null && valeur != "") {
     color = obtenirCouleur(valeur);
   }
-  if (choixCercle.choixcercle.value=="cercles"){
-    return {
+
+  if (!statExiste){
+    var couleurDefaut = "#AAAAAA";
+    var styleGeometrie = styleDefaut(couleurDefaut);
+  }
+  else if(mode == "cerclesProportionnels"){
+    styleGeometrie = styleCercles(color);
+  }
+  else{
+    styleGeometrie = styleCouleur(color);
+  }
+
+  return styleGeometrie;
+}
+
+/*
+Fonction permettant de créer le style des polygones
+*/
+// function style(feature) {
+//   console.log("hey");
+//   var color = ["#AAAAAA"];
+//   var valeur = feature.properties.stats;
+//   if (!isNaN(valeur) && valeur != null && valeur != "") {
+//     color = obtenirCouleur(valeur);
+//   }
+//   if (mode == "cerclesProportionnels"){
+//     return {
+//       fillColor: color,
+//       weight: 1,
+//       opacity: 1,
+//       color: 'black',
+//       dashArray: '3',
+//       fillOpacity: 0,
+//       fill: true
+//     };
+//   }
+//   if (choixEchelle.choixEchelle.value == "commune") {
+//     return {
+//       fillColor: color,
+//       weight: 1,
+//       opacity: 1,
+//       color: color,
+//       fillOpacity: 0.7,
+//       fill: true
+//     };
+//   }
+//   return {
+//     fillColor: color,
+//     weight: 1,
+//     opacity: 1,
+//     color: 'white',
+//     dashArray: '3',
+//     fillOpacity: 0.7,
+//     fill: true
+//   };
+// }
+
+/*
+Fonction permettant de créer le style des polygones si "cerclesProportionnels"
+est choisi
+*/
+function styleCercles(color){
+   return {
       fillColor: color,
       weight: 1,
       opacity: 1,
@@ -713,7 +784,11 @@ function style(feature) {
       fill: true
     };
   }
-  if (choixEchelle.choixEchelle.value == "commune") {
+
+/*
+Fonction permettant de créer le style des polygones si aucune statistique n'existe
+*/
+function styleDefaut(color){
     return {
       fillColor: color,
       weight: 1,
@@ -723,16 +798,21 @@ function style(feature) {
       fill: true
     };
   }
-  return {
-    fillColor: color,
-    weight: 1,
-    opacity: 1,
-    color: 'white',
-    dashArray: '3',
-    fillOpacity: 0.7,
-    fill: true
-  };
-}
+
+/*
+Fonction permettant de créer le style des polygones si on désire colorier les régions
+*/
+function styleCouleur(color){
+    return {
+      fillColor: color,
+      weight: 1,
+      opacity: 1,
+      color: 'white',
+      dashArray: '3',
+      fillOpacity: 0.7,
+      fill: true
+    };
+  }
 
 /*
 Surbrillance de la carte
@@ -740,7 +820,7 @@ Surbrillance de la carte
 function highlightFeature(e) {
   var layer = e.target;
 
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     layer.setStyle({
       fillColor: '#3498db',
       weight: 3,
@@ -786,7 +866,7 @@ function onEachFeature(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value == "cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercle);
   }
 }
@@ -799,7 +879,7 @@ function onEachFeatureMartinique(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercleMartinique);
   }
 }
@@ -812,7 +892,7 @@ function onEachFeatureGuadeloupe(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercleGuadeloupe);
   }
 }
@@ -825,7 +905,7 @@ function onEachFeatureGuyane(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercleGuyane);
   }
 }
@@ -838,7 +918,7 @@ function onEachFeatureReunion(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercleReunion);
   }
 }
@@ -851,7 +931,7 @@ function onEachFeatureMayotte(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercleMayotte);
   }
 }
@@ -895,7 +975,7 @@ function creerLegende() {
       labels = [];
 
   //Mise à jour de la légende si on choisit des cercles proportionnels
-  if (choixCercle.choixcercle.value=="cercles" && statExiste){
+  if (mode == "cerclesProportionnels" && statExiste){
     div = remplirLegendeCercle(div);
   }
   //Mise à jour de la légende si on choisit de colorier les zones
@@ -1135,4 +1215,3 @@ choixMode.addEventListener("change",majGeometrie);
 choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
-choixCercle.addEventListener("change",majGeometrie);
