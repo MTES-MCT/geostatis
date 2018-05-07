@@ -983,8 +983,9 @@ function remplirLegendeCouleur(div){
 
     var borneInf = valeurStat = ecritureScientifique(precisionDecimale(grades[i], 2));
     var borneSup = ecritureScientifique(precisionDecimale(grades[i + 1], 2));
+    console.log(borneSup);
 
-    if (borneSup == "NaN"){
+    if (borneSup == "NaN</sup>"){
       borneSup = '+';
     }
 
