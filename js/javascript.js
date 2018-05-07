@@ -62,6 +62,7 @@ Carte de la Guadeloupe
 var mapGuadeloupe = L.map('mapGuadeloupe', {
   center: [16.2490067,-61.5650444],
   zoom: 8,
+  zoomSnap: 0.25,  // pour permettre d'ajuster finement le zoom aux limites de la carte
   zoomControl:false,
   attributionControl: false
 });
@@ -72,6 +73,7 @@ Carte de la Martinique
 var mapMartinique = L.map('mapMartinique', {
   center: [14.6553,-60.9906],
   zoom: 8,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -82,6 +84,7 @@ Carte de la Guyane
 var mapGuyane = L.map('mapGuyane', {
   center: [4.0039882, -52.9999980],
   zoom: 5,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -92,6 +95,7 @@ Carte de la Réunion
 var mapReunion = L.map('mapReunion', {
   center: [-21.1309332, 55.5265771],
   zoom: 8,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -102,6 +106,7 @@ Carte de Mayotte
 var mapMayotte = L.map('mapMayotte', {
   center: [-12.8230480, 45.1520755],
   zoom: 9,
+  zoomSnap: 0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -166,12 +171,12 @@ var titrePrincipal = document.getElementById("titrePrincipal");
 var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
 var choixCommune = document.getElementById("choixCommune");
-var choixZone = document.getElementById("menuChoixZone");
+var choixEchelle = document.getElementById("menuChoixEchelle");
 var region = document.getElementById("region");
 var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
 var choixMode = document.getElementById("choixMode");
-var choixCouleurPalette = document.getElementById("choixCouleurPalette");
+var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
 var nombreClasses = document.getElementById("nombreClasses");
 var afficheNombreClasses = document.getElementById("afficheNombreClasses");
@@ -189,14 +194,13 @@ var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Ur
 
 var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
 
-var controlLegende = L.control({position: 'bottomleft'}); //Légende
-var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
-var controlEchelle = L.control.scale({imperial:false, position: 'bottomright'}); //Échelle
+var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de géométries JSON
 var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
-var info = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
-var zoneAffichee = 'region';
+var controlLegende = L.control({position: 'bottomleft'}); //Légende
+var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
+var echelleAffichee = 'region';
 var stats;
 var statsMetadata = null;
 var places;
@@ -204,6 +208,7 @@ var valeurs;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
+var geostatsObject = new geostats();
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
 var miniMap; //Variable liée à la mini-map
@@ -212,7 +217,7 @@ var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
 
 
-/*------------------------Lecture d'un fichier JSON---------------------------*/
+/*------------------------Gestion des mises à jour géométrie et stats---------------------------*/
 
 /*
 Fonction permettant le changement de couche géométrique
@@ -264,6 +269,103 @@ function majStats(){
   return promesse;
 }
 
+/*
+Fonction pour permettre de mettre à jour la légende
+*/
+function majLegende(){
+  majMode();
+  majPaletteCouleur();
+  majNombreClasses();
+  obtenirBornes();
+  afficherLegende();
+}
+
+/*
+Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
+*/
+function majMode(){
+  mode = choixMode.value;
+}
+
+/*
+Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
+*/
+function majPaletteCouleur(){
+  var i = choixPaletteCouleur.value;
+  colors = colorPalettes[i].couleurs;
+}
+
+/*
+Fonction permettant de mettre à jour le nombre de classes que l'utilisateur a
+entré avec la barre
+*/
+function majNombreClasses(){
+  var tempNombreClasses = parseInt(nombreClasses.value);
+  if (isNaN(tempNombreClasses)) {
+    tempNombreClasses = 5;
+  }
+  afficheNombreClasses.innerHTML = tempNombreClasses;
+  valeurNombreClasses = tempNombreClasses;
+}
+
+/*
+Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle échelle en fonction du niveau de zoom (Région, département, EPCI, commune)
+*/
+function majEchelle() {
+  if (choixEchelle.choixEchelle.value == "departement") {
+    echelleGeometrieJson = "departements";
+  }
+  else if (choixEchelle.choixEchelle.value == "commune") {
+    echelleGeometrieJson = "communes";
+  }
+  else {
+    echelleGeometrieJson = "regions";
+  }
+  //Mise à jour de l'échelle affichée
+  echelleAffichee = choixEchelle.choixEchelle.value;
+}
+
+/*
+Fonction permettant de changer d'échelle (région, département, commune) seulement
+lorsque l'utilisateur change et non lorsqu'il clique une nouvelle fois sur la
+même échelle.
+*/
+function onClickChoixEchelle(){
+  if (choixEchelle.choixEchelle.value != echelleAffichee){
+    majGeometrie();
+  }
+}
+
+/*
+Fonction permettant d'éviter de sélectionner certaines données
+en fonction du niveau de zoom
+*/
+function restreindreChoixEchelleSelonZoom() {
+  var niveauZoom = mapFranceMetropolitaine.getZoom();
+
+  if (niveauZoom < 8) {
+    //On affiche toutes les possibilités
+    choixCommune.style.display = "block";
+    choixDepartement.style.display = "block";
+    choixRegion.style.display = "block";
+  } else {
+    /*
+    On enlève la carte des régions si le niveau de zoom est supérieur à 8.
+    On met celle des départements par défaut
+    */
+    if (choixEchelle.choixEchelle.value == "region") {
+      departement.checked = true;
+      majGeometrie();
+    }
+    //On cache la case des régions
+    choixCommune.style.display = "block";
+    choixDepartement.style.display = "block";
+    choixRegion.style.display = "none";
+  }
+}
+
+
+/*-------------------------Gestion des objets TopoJSON/GeoJSON----------------------------*/
 
 /*
 Fonction permettant de charger un fichier TopoJSON pour être décompressé.
@@ -276,6 +378,40 @@ function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
   });
   return promesse;
 }
+
+
+/*
+Fonction qui s'effectuera au chargement de la page pour afficher les données
+liées au TopoJSON
+*/
+function chargerAfficherGeometriesOnLoad(){
+  chargerDecompresserTopoJSON().then(majGeometrie);
+  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+}
+
+/*
+Fonction qui ajoute à la (ou réinitialise) les couches de géométries
+*/
+function ajouterGeojsonLayers() {
+
+  if (layerMetropole) {
+    mapFranceMetropolitaine.removeLayer(layerMetropole);
+    mapGuadeloupe.removeLayer(layerGuadeloupe);
+    mapMartinique.removeLayer(layerMartinique);
+    mapGuyane.removeLayer(layerGuyane);
+    mapReunion.removeLayer(layerReunion);
+    mapMayotte.removeLayer(layerMayotte);
+  }
+
+  //Ajout des différents objets sur les cartes
+  layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(mapFranceMetropolitaine);
+  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapGuadeloupe);
+  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapMartinique);
+  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapGuyane);
+  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapReunion);
+  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapMayotte);
+}
+
 
 /*------------------------Gestion des statistiques----------------------------*/
 
@@ -321,6 +457,9 @@ function obtenirArrayNumerique(array){
       nouvelArray.push(array[i]);
     }
   }
+
+  geostatsObject.setSerie(nouvelArray);
+
   return nouvelArray;
 }
 
@@ -396,7 +535,7 @@ function obtenirCheminFichierJsonStats(){
 
   try {
     nomFichierStatsJson = listeStatsEtTitres[parseFloat(choixStat.value)][0];
-    nomFichierStatsJson += "_" + choixZone.choixzone.value + ".json";
+    nomFichierStatsJson += "_" + choixEchelle.choixEchelle.value + ".json";
 
     if (!listeFichiersJson.includes(nomFichierStatsJson)){
       statsJson = "";
@@ -421,7 +560,7 @@ function obtenirStats() {
 
     recupererMetadonneesStats();
 
-    if (stats.metadata.scale == choixZone.choixzone.value) {
+    if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
         valeurs.push(stats.data[code_insee]);
@@ -439,74 +578,32 @@ function obtenirStats() {
   return promesse;
 }
 
-/*-------------------------Gestion des objets JSON----------------------------*/
 
-function ajouterGeojsonLayers() {
+/*--------------------Gestion des classifications et styles---------------------*/
 
-  if (layerMetropole) {
-    mapFranceMetropolitaine.removeLayer(layerMetropole);
-    mapGuadeloupe.removeLayer(layerGuadeloupe);
-    mapMartinique.removeLayer(layerMartinique);
-    mapGuyane.removeLayer(layerGuyane);
-    mapReunion.removeLayer(layerReunion);
-    mapMayotte.removeLayer(layerMayotte);
+/*
+Fonction pour permettre de mettre à jour les bornes des intervalles
+*/
+function obtenirBornes(){
+  grades = []; //Réinitialisation de grades
+  if (valeursNumeriques.length == 0){
+    grades = [];
   }
-
-  //Ajout des différents objets sur les cartes
-  layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(mapFranceMetropolitaine);
-  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapGuadeloupe);
-  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapMartinique);
-  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapGuyane);
-  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapReunion);
-  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeature}).addTo(mapMayotte);
-}
-
-/*
-Fonction permettant d'éviter de sélectionner certaines données
-en fonction du niveau de zoom
-*/
-function restreindreDonneesSelonZoom() {
-  var niveauZoom = mapFranceMetropolitaine.getZoom();
-
-  if (niveauZoom < 8) {
-    //On affiche toutes les possibilités
-    choixCommune.style.display = "block";
-    choixDepartement.style.display = "block";
-    choixRegion.style.display = "block";
-  } else {
-    /*
-    On enlève la carte des régions si le niveau de zoom est supérieur à 8.
-    On met celle des départements par défaut
-    */
-    if (choixZone.choixzone.value == "region") {
-      departement.checked = true;
-      majGeometrie();
-    }
-    //On cache la case des régions
-    choixCommune.style.display = "block";
-    choixDepartement.style.display = "block";
-    choixRegion.style.display = "none";
+  else if (mode == 'intervallesEgaux'){
+    grades = geostatsObject.getClassEqInterval(valeurNombreClasses).slice(0, -1);
   }
-}
-
-/*--------------------Interactivité avec la carte, design---------------------*/
-
-/*
-Ajout d'une échelle sur la carte de la France métropolitaine
-*/
-function ajouterEchelle() {
-  controlEchelle.addTo(mapFranceMetropolitaine);
-}
-
-/*
-Ajout d'une série de boutons avec 3 choix de zoom :
-- zoomer
-- dézoomer
-- retourner à la vue initiale (zoom à 5.5)
-*/
-function afficherBoutonsZoomHome(){
-  var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
-  controlZoomHome.addTo(mapFranceMetropolitaine);
+  else if (mode == 'effectifsEgaux'){
+    grades = geostatsObject.getClassQuantile(valeurNombreClasses).slice(0, -1);
+  }
+  else if (mode == 'ecartType'){
+    grades = geostatsObject.getClassStdDeviation(valeurNombreClasses).slice(0, -1);
+  }
+  else if (mode == 'rupturesNaturelles'){
+    grades = geostatsObject.getClassJenks(valeurNombreClasses).slice(0, -1);
+  }
+  else{
+    //Voir ce qu'il faut faire
+  }
 }
 
 /*
@@ -537,13 +634,12 @@ function style(feature) {
   if (!isNaN(valeur) && valeur != null && valeur != "") {
     color = obtenirCouleur(valeur);
   }
-  if (choixZone.choixzone.value == "commune") {
+  if (choixEchelle.choixEchelle.value == "commune") {
     return {
       fillColor: color,
       weight: 1,
       opacity: 1,
       color: color,
-      dashArray: '3',
       fillOpacity: 0.7,
       fill: true
     };
@@ -602,6 +698,8 @@ function onEachFeature(feature, layer) {
   });
 }
 
+/*--------------------Création et ajout des différents éléments de contrôle et d'habillage---------------------*/
+
 /*
 Fonction permettant d'arrondir un nombre avec un precision définie
 */
@@ -657,11 +755,6 @@ Fonction permettant d'afficher la barre d'information qui affiche le nom de la
 zone sélectionnée avec d'autres infos
 */
 function afficherCartouche(mapObject) {
-
-  var map = mapObject;
-
-  /* Pop-up sur le côté avec les infos de la zone étudiée */
-  controlInfo = L.control({position: 'topright'});
 
   controlInfo.onAdd = function (mapFranceMetropolitaine) {
     this._div = L.DomUtil.create('div', 'controlInfo'); // Création d'une div de classe INFO
@@ -728,205 +821,64 @@ function afficherMiniMap(){
 
 }
 
-/*------------------------Sélection des palettes------------------------------*/
+/*
+Ajout d'une échelle sur la carte de la France métropolitaine
+*/
+function afficherEchelleGraphique() {
+  var controlEchelleGraphique = L.control.scale({imperial:false, position: 'bottomright'}); //Échelle
+  controlEchelleGraphique.addTo(mapFranceMetropolitaine);
+}
 
+/*
+Ajout d'une série de boutons avec 3 choix de zoom :
+- zoomer
+- dézoomer
+- retourner à la vue initiale (zoom à 5.5)
+*/
+function afficherBoutonsZoomHome(){
+  var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
+  controlZoomHome.addTo(mapFranceMetropolitaine);
+}
 
 /*
 Fonction permettant de faire la liste des palettes de couleurs disponibles dans
 le fichier HTML
 */
-function majChoixCouleurPalette(){
-  choixCouleurPalette.innerHTML = "";
+function remplirChoixPaletteCouleur(){
+  choixPaletteCouleur.innerHTML = "";
 
   for (var i=0;i<Object.keys(colorPalettes).length;i++){
-    choixCouleurPalette.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
+    choixPaletteCouleur.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
   }
 }
 
-/*------------------------Sélection de la couche------------------------------*/
 
-/*
-Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle échelle en fonction du niveau de zoom (Région, département, EPCI, commune)
-*/
-function majEchelle() {
-  if (choixZone.choixzone.value == "departement") {
-    echelleGeometrieJson = "departements";
-  }
-  else if (choixZone.choixzone.value == "commune") {
-    echelleGeometrieJson = "communes";
-  }
-  else {
-    echelleGeometrieJson = "regions";
-  }
-  //Mise à jour de la zone affichée
-  zoneAffichee = choixZone.choixzone.value;
-}
-
-/*
-Fonction permettant de changer de zone (région, département, commune) seulement
-lorsque l'utilisateur change et non lorsqu'il clique une nouvelle fois sur la
-même zone.
-*/
-function onClickChoixZone(){
-  if (choixZone.choixzone.value != zoneAffichee){
-    majGeometrie();
-  }
-}
-
-/*-----------------------Personnalisation de la carte-------------------------*/
-
-/*
-Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
-*/
-function majMode(){
-  mode = choixMode.value;
-}
-
-/*
-Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
-*/
-function majPaletteCouleur(){
-  var i = choixCouleurPalette.value;
-  colors = colorPalettes[i].couleurs;
-}
-
-/*
-Fonction permettant de mettre à jour le nombre de classes que l'utilisateur a
-entré avec la barre
-*/
-function obtenirNombreClasses(){
-  var tempNombreClasses = parseInt(nombreClasses.value);
-  if (isNaN(tempNombreClasses)) {
-    tempNombreClasses = 5;
-  }
-  afficheNombreClasses.innerHTML = tempNombreClasses;
-  valeurNombreClasses = tempNombreClasses;
-}
-
-/*
-Fonction pour permettre de mettre à jour les bornes des intervalles
-*/
-function obtenirBornes(){
-  grades = []; //Réinitialisation de grades
-  if (valeursNumeriques.length == 0){
-    grades = [];
-  }
-  else if (mode == 'intervallesEgaux'){
-    obtenirBornesAvecIntervallesEgaux();
-  }
-  else if (mode == 'effectifsEgaux'){
-    obtenirBornesAvecEffectifsEgaux();
-  }
-  else{
-    //Voir ce qu'il faut faire
-  }
-}
-
-/*
-Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
-"Intervalles Égaux" est choisi
-*/
-function obtenirBornesAvecIntervallesEgaux(){
-    var minStats = Math.min.apply(Math, valeursNumeriques);
-    var maxStats = Math.max.apply(Math, valeursNumeriques);
-    var taille = (maxStats-minStats)/valeurNombreClasses;
-    var tempGrades = minStats;
-
-    for (var i=0;i<valeurNombreClasses;i++){
-
-      grades.push(tempGrades);
-      tempGrades += taille;
-    }
-}
-
-/*
-Fonction pour permettre de mettre à jour les bornes des intervalles lorsque
-"Effectif Égaux" est choisi
-*/
-function obtenirBornesAvecEffectifsEgaux(){
-  //Tri des valeurs dans l'ordre numérique
-  valeursNumeriques.sort(function(a,b) { return a - b;});
-
-  var lengthValeurs = valeursNumeriques.length;
-
-  for (var i=0;i<valeurNombreClasses;i++){
-    iQuantile = d3.quantile(valeursNumeriques, (i)/valeurNombreClasses);
-    grades.push(iQuantile);
-  }
-
-}
-
-/*
-Fonction pour permettre de mettre à jour la légende
-*/
-function majLegende(){
-  majMode();
-  majPaletteCouleur();
-  obtenirNombreClasses();
-  obtenirBornes();
-  afficherLegende();
-}
-
-/*
-Fonction permettant d'obtenir le centroide d'un array de points
-*/
-function getCentroid(polygone){
-    var arr= polygone.toGeoJSON();
-
-    var twoTimesSignedArea = 0;
-    var cxTimes6SignedArea = 0;
-    var cyTimes6SignedArea = 0;
-
-    var length = arr.length
-
-    var x = function (i) { return arr[i % length][0] };
-    var y = function (i) { return arr[i % length][1] };
-
-    for ( var i = 0; i < arr.length; i++) {
-        var twoSA = x(i)*y(i+1) - x(i+1)*y(i);
-        twoTimesSignedArea += twoSA;
-        cxTimes6SignedArea += (x(i) + x(i+1)) * twoSA;
-        cyTimes6SignedArea += (y(i) + y(i+1)) * twoSA;
-    }
-    var sixSignedArea = 3 * twoTimesSignedArea;
-    return [ cxTimes6SignedArea / sixSignedArea, cyTimes6SignedArea / sixSignedArea];
-}
-
-
-/*
-Fonction qui s'effectuera au chargement de la page pour afficher les données
-liées au TopoJSON
-*/
-function chargerAfficherGeometriesOnLoad(){
-  chargerDecompresserTopoJSON().then(majGeometrie);
-  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
-}
+/*-----------------------Initialisation de la carte-------------------------*/
 
 /*
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
+  bloquerFonctionnalitesMapsOutreMer();
+  zoomSelonBounds();
+  ajouterFondsDeCartes(url);
+  chargerAfficherGeometriesOnLoad();
   remplirListeStats();
-  majChoixCouleurPalette();
+  remplirChoixPaletteCouleur();
   majPaletteCouleur();
-  ajouterEchelle();
+  afficherEchelleGraphique();
   afficherMiniMap();
   afficherBoutonsZoomHome();
-  chargerAfficherGeometriesOnLoad();
-  zoomSelonBounds();
-  bloquerFonctionnalitesMapsOutreMer();
-  ajouterFondsDeCartes(url);
   afficherCartouche(mapFranceMetropolitaine);
-  afficherLegende();
 }
 
 /*------------------------Appel aux différentes fonctions---------------------*/
 
 window.onload = onLoad;
-choixZone.addEventListener('click',onClickChoixZone);
-mapFranceMetropolitaine.on('zoom',restreindreDonneesSelonZoom);
+choixEchelle.addEventListener('click',onClickChoixEchelle);
+mapFranceMetropolitaine.on('zoom',restreindreChoixEchelleSelonZoom);
 mapFranceMetropolitaine.on('zoom',afficherMiniMap)
 choixMode.addEventListener("change",majGeometrie);
-choixCouleurPalette.addEventListener("change",majGeometrie);
+choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
