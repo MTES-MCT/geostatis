@@ -111,6 +111,11 @@ var mapMayotte = L.map('mapMayotte', {
   attributionControl: false
 });
 
+/*----------------------Gestion des cartes-----------------------*/
+
+/*
+Fonction pour ajuster le zoom des cartes afin de contenir les emprises
+*/
 function zoomSelonBounds() {
   //Zoom sur la France métropolitaine
   mapFranceMetropolitaine.fitBounds(maxBoundsFranceMetropolitaine);
@@ -121,8 +126,6 @@ function zoomSelonBounds() {
   mapReunion.fitBounds(maxBoundsReunion);
   mapMayotte.fitBounds(maxBoundsMayotte);
 }
-
-/*----------------------Propriétés des cartes Outre-Mer-----------------------*/
 
 /*
 Fonction pour bloquer la navigation dans dans une carte
@@ -147,8 +150,6 @@ function bloquerFonctionnalitesMapsOutreMer() {
   bloquerFonctionnalitesMap(mapMayotte);
 }
 
-/*----------------------Propriétés des cartes Outre-Mer-----------------------*/
-
 /*
 Fonction permettant l'ajout des couches sur les cartes à partir d'une URL du serveur de fonds de carte
 */
@@ -165,7 +166,6 @@ function ajouterFondsDeCartes(url) {
 
 /*-------------------------------Variables globales---------------------------*/
 
-var mapsEtParametresPersonnalisation = document.getElementById("mapsEtParametresPersonnalisation");
 //Ensemble des balises du fichier html
 var titrePrincipal = document.getElementById("titrePrincipal");
 var sousTitre = document.getElementById("sousTitre");
@@ -184,15 +184,12 @@ var afficheNombreClasses = document.getElementById("afficheNombreClasses");
 var choixCercle = document.getElementById("menuChoixCercle");
 afficheNombreClasses.innerHTML = nombreClasses.value;
 
-//Variables globales
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
 var layerGuadeloupe; //Objet layer GeoJSON de la Guadeloupe affiché sur la carte
 var layerMartinique; //Objet layer GeoJSON de la Martinique affiché sur la carte
 var layerGuyane; //Objet layer GeoJSON de la Guyane affiché sur la carte
 var layerReunion; //Objet layer GeoJSON de la Réunion affiché sur la carte
 var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
-
-var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
 
 var layerCercle = L.layerGroup(); //Objet layerGroup contenant les cercles propo
 var layerCercleGuadeloupe = L.layerGroup();
@@ -201,25 +198,25 @@ var layerCercleGuyane = L.layerGroup();
 var layerCercleReunion = L.layerGroup();
 var layerCercleMayotte = L.layerGroup();
 
-var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
-
+var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
+var topoJsonParEchelle = {}; //Tableau des TopoJSON par échelle
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
+var places; //Contiendra les géométries geoJSON de métropole issues du TopoJSON de l'échelle sélectionnée
+var placesDROM; //Même chose pour les DROM
 var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
-var controlLegende = L.control({position: 'bottomleft'}); //Légende
-var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
-var echelleAffichee = 'region';
-var stats;
+var maxStats = NaN;
 var statsMetadata = null;
-var places;
-var valeurs;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
-var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
+var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
 var geostatsObject = new geostats();
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
+var controlLegende = L.control({position: 'bottomleft'}); //Légende
+var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
+var echelleAffichee = 'region';
 var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 
@@ -491,23 +488,6 @@ function recupererMetadonneesStats(){
 }
 
 /*
-Fonction permettant d'obtenir toutes les valeurs numériques d'un tableau
-*/
-function obtenirArrayNumerique(array){
-  var nouvelArray = [];
-
-  for (var i=0;i<array.length;i++){
-    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
-      nouvelArray.push(array[i]);
-    }
-  }
-
-  geostatsObject.setSerie(nouvelArray);
-
-  return nouvelArray;
-}
-
-/*
 Fonction pour créer une liste de fichiers stats disponibles
 */
 function obtenirListeFichiersStat(){
@@ -594,6 +574,21 @@ function obtenirCheminFichierJsonStats(){
 }
 
 /*
+Fonction permettant d'obtenir toutes les valeurs numériques d'un tableau
+*/
+function obtenirArrayNumerique(array){
+  var nouvelArray = [];
+
+  for (var i=0;i<array.length;i++){
+    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
+      nouvelArray.push(array[i]);
+    }
+  }
+
+  return nouvelArray;
+}
+
+/*
 Fonction permettant de lire un fichier de statistiques et le traiter afin
 de les représenter sur les cartes.
 */
@@ -603,7 +598,7 @@ function obtenirStats() {
     statsMetadata = stats.metadata;
 
     recupererMetadonneesStats();
-
+    var valeurs = [];
     if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
@@ -617,6 +612,10 @@ function obtenirStats() {
       }
     }
     valeursNumeriques = obtenirArrayNumerique(valeurs);
+
+    geostatsObject.setSerie(valeursNumeriques);
+    maxStats = geostatsObject.max();
+
     statsMetadata = null;
   });
   return promesse;
@@ -867,7 +866,7 @@ function creerCercle(feature, layer, layerC){
     var stat = feature.properties["stats"];
     var centroid = getCentroid(feature);
     marq_circ=L.circleMarker(centroid, {
-      radius : setCircleSize(stat, geostatsObject.max()),
+      radius : setCircleSize(stat, maxStats),
       color : '#7d3c98',
       weight : 1,
       fillOpacity: 0.6,
@@ -893,12 +892,12 @@ function creerLegende() {
       labels = [];
 
     var r2=10
-    var v2=(r2/20*Math.sqrt(geostatsObject.max()))**2
+    var v2=(r2/20*Math.sqrt(maxStats))**2
 
     var legendeCercle = "<svg height='100' width='100'>";
-    legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill=" + colors[4] + " fill-opacity='0.6' />";
-    legendeCercle += "<text x='52' y='45' fill='black'>"+geostatsObject.max().toString()+"</text>";
-    legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill=" + colors[4] + " fill-opacity='0.6' />";
+    legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
+    legendeCercle += "<text x='52' y='45' fill='black'>"+maxStats.toString()+"</text>";
+    legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
     legendeCercle += "<text x='47' y='75' fill='black'>"+v2.toString()+"</text>";
     legendeCercle += "</svg>";
 
