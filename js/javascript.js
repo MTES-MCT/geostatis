@@ -1082,11 +1082,16 @@ Ne peut être appelée qu'après ajout de cette image
 */
 function majLargeurSvg(){
   try{
-  var text1 = document.getElementById('text1');
-  var text2 = document.getElementById('text2');
-  var largueurMax = Math.max(text1.clientWidth,text2.clientWidth);
-  var legendeSvg = document.getElementById('legendeSvg');
-  legendeSvg.style.width = 65 + largueurMax;
+    var text1 = document.getElementById('text1');
+    var text2 = document.getElementById('text2');
+
+    var largeurText1 = Math.ceil(text1.getComputedTextLength());
+    var largeurText2 = Math.ceil(text2.getComputedTextLength());
+
+    var largueurMax = Math.max(largeurText1,largeurText2);
+
+    var legendeSvg = document.getElementById('legendeSvg');
+    legendeSvg.style.width = 65 + largueurMax;
   }
   catch{
     //Ne rien faire
