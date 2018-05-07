@@ -666,7 +666,34 @@ function obtenirCouleur(d) {
       return colors[i];
     }
   }
-    return colors[colors.length-1];
+  return colors[colors.length-1];
+}
+
+/*
+Fonction permettant de calculer le rayon d'un cercle proportionnel à la valeur statistique
+*/
+function setCircleSize(stat,max_stat){
+  if (isNaN(stat)==true){
+    return 0
+  }else{
+    return radius=Math.sqrt(stat)*(20/Math.sqrt(max_stat));
+  }
+}
+
+/*
+Fonction permettant de récupérer le centroide d'un Feature
+*/
+function getCentroid(feature){
+  coord = feature.geometry.coordinates;
+  if (feature.geometry.type=="MultiPolygon"){
+    var polygon = turf.multiPolygon(coord);
+  }else{
+    var polygon = turf.polygon(coord);
+  }
+  centro = turf.centroid(polygon).geometry.coordinates;
+  long = parseFloat(centro[0]);
+  lat = parseFloat(centro[1]);
+  return L.latLng(lat, long);
 }
 
 /*
@@ -1020,32 +1047,6 @@ function remplirChoixPaletteCouleur(){
   }
 }
 
-/*
-Fonction permettant de calculer le rayon d'un cercle proportionnel à la valeur statistique
-*/
-function setCircleSize(stat,max_stat){
-  if (isNaN(stat)==true){
-    return 0
-  }else{
-  return radius=Math.sqrt(stat)*(20/Math.sqrt(max_stat));
-}
-}
-
-/*
-Fonction permettant de récupérer le centroide d'un Feature
-*/
-function getCentroid(feature){
-  coord = feature.geometry.coordinates;
-  if (feature.geometry.type=="MultiPolygon"){
-    var polygon = turf.multiPolygon(coord);
-  }else{
-    var polygon = turf.polygon(coord);
-  }
-  centro = turf.centroid(polygon).geometry.coordinates;
-  long = parseFloat(centro[0]);
-  lat = parseFloat(centro[1]);
-  return L.latLng(lat, long);
-}
 
 /*-----------------------Initialisation de la carte-------------------------*/
 
