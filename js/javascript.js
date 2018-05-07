@@ -211,6 +211,7 @@ var controlLegende = L.control({position: 'bottomleft'}); //Légende
 var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var echelleAffichee = 'region';
 var stats;
+var maxStats=NaN;
 var statsMetadata = null;
 var places;
 var valeurs;
@@ -491,23 +492,6 @@ function recupererMetadonneesStats(){
 }
 
 /*
-Fonction permettant d'obtenir toutes les valeurs numériques d'un tableau
-*/
-function obtenirArrayNumerique(array){
-  var nouvelArray = [];
-
-  for (var i=0;i<array.length;i++){
-    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
-      nouvelArray.push(array[i]);
-    }
-  }
-
-  geostatsObject.setSerie(nouvelArray);
-
-  return nouvelArray;
-}
-
-/*
 Fonction pour créer une liste de fichiers stats disponibles
 */
 function obtenirListeFichiersStat(){
@@ -594,6 +578,21 @@ function obtenirCheminFichierJsonStats(){
 }
 
 /*
+Fonction permettant d'obtenir toutes les valeurs numériques d'un tableau
+*/
+function obtenirArrayNumerique(array){
+  var nouvelArray = [];
+
+  for (var i=0;i<array.length;i++){
+    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
+      nouvelArray.push(array[i]);
+    }
+  }
+
+  return nouvelArray;
+}
+
+/*
 Fonction permettant de lire un fichier de statistiques et le traiter afin
 de les représenter sur les cartes.
 */
@@ -617,6 +616,10 @@ function obtenirStats() {
       }
     }
     valeursNumeriques = obtenirArrayNumerique(valeurs);
+
+    geostatsObject.setSerie(valeursNumeriques);
+    maxStats = geostatsObject.max();
+
     statsMetadata = null;
   });
   return promesse;
@@ -867,7 +870,7 @@ function creerCercle(feature, layer, layerC){
     var stat = feature.properties["stats"];
     var centroid = getCentroid(feature);
     marq_circ=L.circleMarker(centroid, {
-      radius : setCircleSize(stat, geostatsObject.max()),
+      radius : setCircleSize(stat, maxStats),
       color : '#7d3c98',
       weight : 1,
       fillOpacity: 0.6,
@@ -893,11 +896,11 @@ function creerLegende() {
       labels = [];
 
     var r2=10
-    var v2=(r2/20*Math.sqrt(geostatsObject.max()))**2
+    var v2=(r2/20*Math.sqrt(maxStats))**2
 
     var legendeCercle = "<svg height='100' width='100'>";
     legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
-    legendeCercle += "<text x='52' y='45' fill='black'>"+geostatsObject.max().toString()+"</text>";
+    legendeCercle += "<text x='52' y='45' fill='black'>"+maxStats.toString()+"</text>";
     legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
     legendeCercle += "<text x='47' y='75' fill='black'>"+v2.toString()+"</text>";
     legendeCercle += "</svg>";
