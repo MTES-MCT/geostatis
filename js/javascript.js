@@ -672,7 +672,7 @@ function setCircleSize(stat,max_stat){
   if (isNaN(stat)==true){
     return 0
   }else{
-    return radius=Math.sqrt(Math.abs(stat))*(20/Math.sqrt(max_stat));
+    return Math.sqrt(Math.abs(stat))*(20/Math.sqrt(max_stat));
   }
 }
 
@@ -680,15 +680,16 @@ function setCircleSize(stat,max_stat){
 Fonction permettant de récupérer le centroide d'un Feature
 */
 function getCentroid(feature){
-  coord = feature.geometry.coordinates;
+  var coord = feature.geometry.coordinates;
+  var polygon = null;
   if (feature.geometry.type=="MultiPolygon"){
-    var polygon = turf.multiPolygon(coord);
+    polygon = turf.multiPolygon(coord);
   }else{
-    var polygon = turf.polygon(coord);
+    polygon = turf.polygon(coord);
   }
-  centro = turf.centroid(polygon).geometry.coordinates;
-  long = parseFloat(centro[0]);
-  lat = parseFloat(centro[1]);
+  var centro = turf.centroid(polygon).geometry.coordinates;
+  var long = parseFloat(centro[0]);
+  var lat = parseFloat(centro[1]);
   return L.latLng(lat, long);
 }
 
@@ -829,7 +830,7 @@ function creerCercle(feature, layer, layerC){
     couleurCercle = couleurCercleNegatif;
   }
 
-  marq_circ = L.circleMarker(centroid, {
+  var marq_circ = L.circleMarker(centroid, {
     radius : setCircleSize(stat, maxStats),
     weight : 0,
     fillOpacity: 0.6,
@@ -939,11 +940,11 @@ Ne peut être appelée qu'après ajout de cette image
 */
 function majLargeurSvg(){
   try{
-  var text1 = document.getElementById('text1');
-  var text2 = document.getElementById('text2');
-  var largueurMax = Math.max(text1.clientWidth,text2.clientWidth);
-  var legendeSvg = document.getElementById('legendeSvg');
-  legendeSvg.style.width = 65 + largueurMax;
+    var text1 = document.getElementById('text1');
+    var text2 = document.getElementById('text2');
+    var largueurMax = Math.max(text1.clientWidth,text2.clientWidth);
+    var legendeSvg = document.getElementById('legendeSvg');
+    legendeSvg.style.width = 65 + largueurMax;
   }
   catch{
     //Ne rien faire
