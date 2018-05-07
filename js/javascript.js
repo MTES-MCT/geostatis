@@ -719,6 +719,7 @@ function style(feature) {
   }
   else if(mode == "cerclesProportionnels"){
     styleGeometrie = styleCercles(color);
+
   }
   else{
     styleGeometrie = styleCouleur(color);
@@ -726,48 +727,6 @@ function style(feature) {
 
   return styleGeometrie;
 }
-
-/*
-Fonction permettant de créer le style des polygones
-*/
-// function style(feature) {
-//   console.log("hey");
-//   var color = ["#AAAAAA"];
-//   var valeur = feature.properties.stats;
-//   if (!isNaN(valeur) && valeur != null && valeur != "") {
-//     color = obtenirCouleur(valeur);
-//   }
-//   if (mode == "cerclesProportionnels"){
-//     return {
-//       fillColor: color,
-//       weight: 1,
-//       opacity: 1,
-//       color: 'black',
-//       dashArray: '3',
-//       fillOpacity: 0,
-//       fill: true
-//     };
-//   }
-//   if (choixEchelle.choixEchelle.value == "commune") {
-//     return {
-//       fillColor: color,
-//       weight: 1,
-//       opacity: 1,
-//       color: color,
-//       fillOpacity: 0.7,
-//       fill: true
-//     };
-//   }
-//   return {
-//     fillColor: color,
-//     weight: 1,
-//     opacity: 1,
-//     color: 'white',
-//     dashArray: '3',
-//     fillOpacity: 0.7,
-//     fill: true
-//   };
-// }
 
 /*
 Fonction permettant de créer le style des polygones si "cerclesProportionnels"
