@@ -40,7 +40,7 @@
 
 			<div id="parametresPersonnalisation">
 				<form id="menuChoixEchelle" class="menuChoix">
-					<div>Couche administrative</div>
+					<div class="titreMenu">Couche administrative</div>
 					<div id="choixRegion">
 						<input type="radio" id="region" name="choixEchelle" value="region" checked>
 						<label for="region">Régions</label>
@@ -55,6 +55,7 @@
 					</div>
 				</form>
 
+				<div id="choixModePaletteCouleurNombreClasses">
 				<div id="menuChoixMode" class="menuChoix">
 					<div class="titreMenu">Mode</div>
 					<select id="choixMode" class="menuDeroulant">
@@ -77,9 +78,10 @@
 					<input type="range" id="nombreClasses" class="slider" min=2 max=10 step=1>
 					<div id="afficheNombreClasses"></div>
 				</div>
+			</div>
 
 				<div id="menuChoixStat" class="menuChoix">
-					<div class="titreStat">Statistique</div>
+					<div class="titreMenu">Statistique</div>
 					<select id="choixStat" class="menuDeroulant">
 						<option>-------</option>
 					</select>
