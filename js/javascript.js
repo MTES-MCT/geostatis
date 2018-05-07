@@ -62,7 +62,6 @@ Carte de la Guadeloupe
 var mapGuadeloupe = L.map('mapGuadeloupe', {
   center: [16.2490067,-61.5650444],
   zoom: 8,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -73,7 +72,6 @@ Carte de la Martinique
 var mapMartinique = L.map('mapMartinique', {
   center: [14.6553,-60.9906],
   zoom: 8,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -84,7 +82,6 @@ Carte de la Guyane
 var mapGuyane = L.map('mapGuyane', {
   center: [4.0039882, -52.9999980],
   zoom: 5,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -95,7 +92,6 @@ Carte de la Réunion
 var mapReunion = L.map('mapReunion', {
   center: [-21.1309332, 55.5265771],
   zoom: 8,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -106,7 +102,6 @@ Carte de Mayotte
 var mapMayotte = L.map('mapMayotte', {
   center: [-12.8230480, 45.1520755],
   zoom: 9,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -150,11 +145,9 @@ function bloquerFonctionnalitesMapsOutreMer() {
 /*----------------------Propriétés des cartes Outre-Mer-----------------------*/
 
 /*
-Fonction permettant l'ajout des couches sur les cartes
+Fonction permettant l'ajout des couches sur les cartes à partir d'une URL du serveur de fonds de carte
 */
-function ajouterFondsDeCartes() {
-  //Url du serveur de fonds de carte
-  url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png'
+function ajouterFondsDeCartes(url) {
   //Ajout de la couche fond de carte France Métropolitaine
   L.tileLayer(url).addTo(mapFranceMetropolitaine);
   //Ajout de la couche fond de carte sur les DROM
@@ -167,7 +160,9 @@ function ajouterFondsDeCartes() {
 
 /*-------------------------------Variables globales---------------------------*/
 
+var mapsEtParametresPersonnalisation = document.getElementById("mapsEtParametresPersonnalisation");
 //Ensemble des balises du fichier html
+var titrePrincipal = document.getElementById("titrePrincipal");
 var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
 var choixCommune = document.getElementById("choixCommune");
@@ -175,12 +170,9 @@ var choixEchelle = document.getElementById("menuChoixEchelle");
 var region = document.getElementById("region");
 var departement = document.getElementById("departement");
 var commune = document.getElementById("commune");
-var affichageStats = document.getElementById("affichageStats");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
-var statAffichee = document.getElementById("statAffichee");
-var metadonneesStat = document.getElementById("metadonneesStat");
 var nombreClasses = document.getElementById("nombreClasses");
 var afficheNombreClasses = document.getElementById("afficheNombreClasses");
 afficheNombreClasses.innerHTML = nombreClasses.value;
@@ -192,6 +184,8 @@ var layerMartinique; //Objet layer GeoJSON de la Martinique affiché sur la cart
 var layerGuyane; //Objet layer GeoJSON de la Guyane affiché sur la carte
 var layerReunion; //Objet layer GeoJSON de la Réunion affiché sur la carte
 var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
+
+var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
 
 var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
 
@@ -206,10 +200,14 @@ var stats;
 var statsMetadata = null;
 var places;
 var valeurs;
+var uniteStat; //Unité associée à la statistique
+var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
 var geostatsObject = new geostats();
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
+var miniMap; //Variable liée à la mini-map
+var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
 
@@ -252,7 +250,10 @@ function majStats(){
   if (statsJson != '') {
     promesse = obtenirStats();
   } else {
-    metadonneesStat.innerHTML = "Statistique non disponible pour ce niveau.";
+    recupererMetadonneesStats();
+    console.log("Statistique non disponible pour ce niveau.");
+
+
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
     }
@@ -410,20 +411,34 @@ function ajouterGeojsonLayers() {
 /*------------------------Gestion des statistiques----------------------------*/
 
 /*
-Fonction pour permettre d'afficher les métadonnées de la statistique
+Fonction pour permettre de récupérer les métadonnées de la statistique.
+Si elles n'existent pas, on ne donne pas d'unité et le titre est "Création de cartes statistiques"
 */
-function afficherMetadonneesStats(){
-  if (statsMetadata != null){
-  metadonneesStat.innerHTML = statsMetadata.stat_name;
-    for (x in statsMetadata){
-      if (x!="stat_name" && x!="scale"){
-        metadonneesStat.innerHTML += "<br>" + x + " : " +  statsMetadata[x];
-      }
+function recupererMetadonneesStats(){
+
+  //Obtention de l'unité
+  try{
+    uniteStat = statsMetadata.unit_name;
+    if (uniteStat == undefined){
+      uniteStat = "";
     }
   }
-  else{
-    metadonneesStat.innerHTML = "";
+  catch{
+    uniteStat = "";
   }
+
+  //Obtention du titre
+  try{
+    titreStat = statsMetadata.stat_name;
+    if (titreStat == undefined){
+      titreStat = "Création de cartes statistiques";
+    }
+  }
+  catch{
+    titreStat = "Création de cartes statistiques";
+  }
+
+  titrePrincipal.innerHTML = titreStat;
 }
 
 /*
@@ -537,7 +552,8 @@ function obtenirStats() {
 
   var promesse = d3.json(statsJson).then(function(stats) {
     statsMetadata = stats.metadata;
-    afficherMetadonneesStats();
+
+    recupererMetadonneesStats();
 
     if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
       for (let i=0; i< places.features.length; i++) {
@@ -587,23 +603,20 @@ function obtenirBornes(){
 
 /*
 Fonction permettant d'obtenir la couleur d'un polygone
-en fonction d'une échelles de valeurs (grades) et de couleurs (colors)
- */
-//var obtenirCouleur = d3.scaleThreshold().domain(grades).range(colors);
-
-/*
-Fonction permettant d'obtenir la couleur d'un polygone
 en fonction d'une échelle de valeurs et de couleurs
  */
 function obtenirCouleur(d) {
-    if (isNaN(d)){
-      return '#AAAAAA';
+
+  //Cas où d n'est pas un nombre
+  if (isNaN(d)){
+    return '#AAAAAA'; //Couleur grise
+  }
+
+  for (var i = 0; i < grades.length-1; i++) {
+    if (d >= grades[i] && d < grades[i+1]){
+      return colors[i];
     }
-    for (var i = 0; i < grades.length-1; i++) {
-      if (d >= grades[i] && d < grades[i+1]){
-        return colors[i];
-      }
-    }
+  }
     return colors[colors.length-1];
 }
 
@@ -700,25 +713,28 @@ function creerLegende() {
 
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
-    var borneInf = d3.format(",")(precisionDecimale(grades[i], 2));
-    var borneSup = d3.format(",")(precisionDecimale(grades[i + 1], 2));
 
-    //Syntaxe des nombres à la française
-    borneInf = borneInf.replace(/,/g, " ").replace(".", ",");
-    borneSup = borneSup.replace(/,/g, " ").replace(".", ",");
+    var borneInf = valeurStat = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i], 2));
+    var borneSup = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i + 1], 2));
 
     if (borneSup == "NaN"){
       borneSup = '+';
     }
 
     div.innerHTML +=
-        '<i style="background:' + obtenirCouleur(grades[i] + 1) + '"></i> ' +
+        '<i style="background:' + obtenirCouleur(grades[i]) + '"></i> ' +
         borneInf + ' &ndash; ' + borneSup + '<br>';
   }
 
   return div;
 }
 
+/*
+Fonction pour convertir les nombres avec la syntaxe française
+*/
+function syntaxeNumeriqueFrancaise(nombre){
+  return d3.format(",")(nombre).replace(/,/g, " ").replace(".", ",");
+}
 /*
 Fonction permettant d'afficher la légende
 */
@@ -750,13 +766,24 @@ function afficherCartouche(mapObject) {
   */
   controlInfo.update = function (properties) {
     var valeurStat = "Non connue";
+    var nomUnite = "";
+    var nomTitre = "Pas de donnée";
+
     if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
       valeurStat = parseFloat(properties.stats);
-      valeurStat = d3.format(",")(valeurStat).replace(/,/g, " ").replace(".", ","); //Mise en syntaxe française de la valeur numérique
+      valeurStat = syntaxeNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
+    }
+    if (valeurStat != "Non connue"){
+      nomUnite = uniteStat;
     }
 
+    if (titreStat != undefined){
+      nomTitre = titreStat;
+    }
+
+
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
-        '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat
+        '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat + " " + nomUnite
         : 'Survoler une région');
   };
 
@@ -764,11 +791,30 @@ function afficherCartouche(mapObject) {
 }
 
 /*
-Création d'une mini-carte pour savoir où se situe l'utilisateur dans la France métropolitaine
+Création d'une mini-carte pour savoir où se situe l'utilisateur dans la France métropolitaine.
+Elle s'affiche à partir d'un certain niveau de zoom minimal.
+Elle est enlevée à partir d'un certain niveau de zoom maximal.
 */
 function afficherMiniMap(){
-  var titreMiniMap = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 3, maxZoom: 4});
-  var miniMap = new L.Control.MiniMap(titreMiniMap).addTo(mapFranceMetropolitaine);
+  var niveauZoom = mapFranceMetropolitaine.getZoom();
+
+  //Affichage de la mini-map si le niveau de zoom est supérieur ou égal à 7 et qu'elle n'est pas encore affichée
+  if (niveauZoom >= 7 && !miniMapAffichee){
+
+    //Création des paramètres de la mini-map
+    var url = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+    var donneesMiniMap = new L.TileLayer(url,{minZoom: 3, maxZoom: 4});
+
+    //Création de la carte
+    miniMap = new L.Control.MiniMap(donneesMiniMap).addTo(mapFranceMetropolitaine);
+    miniMapAffichee = true; //Indication de la présence de la carte
+  }
+  //Supression de la mini-map
+  else if (niveauZoom < 7 && miniMapAffichee){
+    mapFranceMetropolitaine.removeControl(miniMap);
+    miniMapAffichee = false; //Indication de l'absence de la carte
+  }
+
 }
 
 /*
@@ -809,7 +855,7 @@ function remplirChoixPaletteCouleur(){
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
-  ajouterFondsDeCartes();
+  ajouterFondsDeCartes(url);
   zoomSelonBounds();
   bloquerFonctionnalitesMapsOutreMer();
   chargerAfficherGeometriesOnLoad();
@@ -826,8 +872,8 @@ function onLoad() {
 
 window.onload = onLoad;
 choixEchelle.addEventListener('click',onClickChoixEchelle);
-mapFranceMetropolitaine.on('zoom',restreindreChoixEchelleSelonZoom);
-
+mapFranceMetropolitaine.on('zoom',restreindreDonneesSelonZoom);
+mapFranceMetropolitaine.on('zoom',afficherMiniMap)
 choixMode.addEventListener("change",majGeometrie);
 choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
