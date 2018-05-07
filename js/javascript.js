@@ -693,7 +693,6 @@ function afficherCartouche(mapObject) {
       nomTitre = titreStat;
     }
 
-
     this._div.innerHTML = '<h4>Informations</h4>' +  (properties ?
         '<b>' + properties.nom + '</b><br />Code INSEE : ' + properties.id + '</b><br />Valeur : ' +  valeurStat + " " + nomUnite
         : 'Survoler une région');
