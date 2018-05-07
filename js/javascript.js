@@ -871,7 +871,7 @@ function creerCercle(feature, layer, layerC){
       color : '#7d3c98',
       weight : 1,
       fillOpacity: 0.6,
-      fillColor: '#bb8fce'
+      fillColor: colors[4]
     }).addTo(layerC);
   }
 }
@@ -896,9 +896,9 @@ function creerLegende() {
     var v2=(r2/20*Math.sqrt(geostatsObject.max()))**2
 
     var legendeCercle = "<svg height='100' width='100'>";
-    legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
+    legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill=" + colors[4] + " fill-opacity='0.6' />";
     legendeCercle += "<text x='52' y='45' fill='black'>"+geostatsObject.max().toString()+"</text>";
-    legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
+    legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill=" + colors[4] + " fill-opacity='0.6' />";
     legendeCercle += "<text x='47' y='75' fill='black'>"+v2.toString()+"</text>";
     legendeCercle += "</svg>";
 
