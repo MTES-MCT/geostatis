@@ -2,7 +2,7 @@
 
 /*Limites maximales de la carte de la France métropolitaine*/
 var maxBoundsFranceMetropolitaine = [
-    [38.135,-8.481], // Coordonnées limites du sud-ouest
+    [37.2,-8.481], // Coordonnées limites du sud-ouest
     [52.456,13.8]  // Coordonnées limites du nord-est
   ];
 
@@ -1084,7 +1084,8 @@ document.getElementById('export').addEventListener('click', function(e) {
   // });
   mapFranceMetropolitaine.export({
     format:"image/png",
-    exclude:["#parametresPersonnalisation",".leaflet-control-zoomhome",".controlInfo"]
+    exclude:["#parametresPersonnalisation",".leaflet-control-zoomhome",".controlInfo"],
+    caption:{text:titreStat, position:[150,500], font:'16px Arial'}
   }).then(function(e) {
      console.log(e);
   });
