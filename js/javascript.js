@@ -1,3 +1,5 @@
+'use strict';
+
 /*----------------------Variables des limites maximales-----------------------*/
 
 /*Limites maximales de la carte de la France métropolitaine*/
@@ -173,9 +175,7 @@ var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
 var choixCommune = document.getElementById("choixCommune");
 var choixEchelle = document.getElementById("menuChoixEchelle");
-var region = document.getElementById("region");
 var departement = document.getElementById("departement");
-var commune = document.getElementById("commune");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
@@ -203,11 +203,9 @@ var topoJsonParEchelle = {}; //Tableau des TopoJSON par échelle
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
 var places; //Contiendra les géométries geoJSON de métropole issues du TopoJSON de l'échelle sélectionnée
 var placesDROM; //Même chose pour les DROM
-var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
 var maxStats = NaN;
-var statsMetadata = null;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
@@ -236,7 +234,6 @@ function majGeometrie() {
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
-  obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
   var promesse = majStats();
   if (!promesse) {
     majLegende();
@@ -255,14 +252,14 @@ Fonction permettant de mettre à jour les données statistiques pour un objet JS
 */
 function majStats(){
 
-  valeurs = [];
+  var cheminFichier = obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
   valeursNumeriques = [];
   var promesse = null;
-  if (statsJson != '') {
-    promesse = obtenirStats();
+  if (cheminFichier != '') {
+    promesse = obtenirStats(cheminFichier);
   } else {
-    recupererMetadonneesStats();
-
+    recupererMetadonneesStats(); // Réinitialisation des métadonnées
+    // Réinitialisation des statistiques sur les géométries
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
     }
@@ -313,7 +310,7 @@ function majNombreClasses(){
 }
 
 /*
-Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle échelle en fonction du niveau de zoom (Région, département, EPCI, commune)
+Fonction permettant de choisir telle ou telle échelle (Région, département, commune)
 */
 function majEchelle() {
   if (choixEchelle.choixEchelle.value == "departement") {
@@ -374,8 +371,7 @@ function restreindreChoixEchelleSelonZoom() {
 /*
 Fonction permettant de charger un fichier TopoJSON pour être décompressé.
 */
-function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
-
+function chargerDecompresserTopoJSON(scale) {
   var filename = "./fonds_carte/json/" + scale + ".json.txt";
   var promesse = d3.text(filename).then(function(data) {
     topoJsonParEchelle[scale] = JSON.parse(LZString.decompressFromUTF16(data));
@@ -389,8 +385,11 @@ Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
 function chargerAfficherGeometriesOnLoad(){
-  chargerDecompresserTopoJSON().then(majGeometrie);
-  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+  chargerDecompresserTopoJSON(echelleGeometrieJson).then(majGeometrie);
+  // Dans le cas d'une visualisation normale, on précharge les départements et les communes
+  if (echelleGeometrieJson == "regions") {
+    chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+  }
 }
 
 /*
@@ -439,8 +438,6 @@ function ajouterGeojsonLayers() {
     layerGuyane.bringToFront();
     layerReunion.bringToFront();
     layerMayotte.bringToFront();
-    // var i=0;
-    // layerCercleDROM.eachLayer(function(layer){console.log(layer);});
   }
 }
 
@@ -451,7 +448,7 @@ function ajouterGeojsonLayers() {
 Fonction pour permettre de récupérer les métadonnées de la statistique.
 Si elles n'existent pas, on ne donne pas d'unité et le titre est "Création de cartes statistiques"
 */
-function recupererMetadonneesStats(){
+function recupererMetadonneesStats(statsMetadata = null){
 
   var sousTitreStat = "";
 
@@ -479,7 +476,6 @@ function recupererMetadonneesStats(){
     if (choixStat.value != "-------"){
       sousTitreStat = "Donnée non disponible à cette échelle";
     }
-
   }
 
   titrePrincipal.innerHTML = titreStat;
@@ -554,7 +550,7 @@ function remplirListeStats(){
 Fonction permettant de récupérer le chemin du fichier voulu
 */
 function obtenirCheminFichierJsonStats(){
-  statsJson = "./fichiers_stats/";
+  var statsJson = "./fichiers_stats/";
   var nomFichierStatsJson;
 
   try {
@@ -571,6 +567,7 @@ function obtenirCheminFichierJsonStats(){
   catch(error) {
     statsJson = "";
   }
+  return statsJson;
 }
 
 /*
@@ -592,19 +589,20 @@ function obtenirArrayNumerique(array){
 Fonction permettant de lire un fichier de statistiques et le traiter afin
 de les représenter sur les cartes.
 */
-function obtenirStats() {
+function obtenirStats(fichierJson) {
 
-  var promesse = d3.json(statsJson).then(function(stats) {
-    statsMetadata = stats.metadata;
-
-    recupererMetadonneesStats();
+  var promesse = d3.json(fichierJson).then(function(stats) {
+    // On essaye de récupérer les métadonnées de la stat
+    recupererMetadonneesStats(stats.metadata);
     var valeurs = [];
     if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
+      // Ajout des stats sur les objets géométriques de métropole
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
         valeurs.push(stats.data[code_insee]);
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
+      // Ajout des stats sur les objets géométriques des DROM
       for (let i=0; i< placesDROM.features.length; i++) {
         let code_insee = placesDROM.features[i].properties.id;
         valeurs.push(stats.data[code_insee]);
@@ -612,11 +610,9 @@ function obtenirStats() {
       }
     }
     valeursNumeriques = obtenirArrayNumerique(valeurs);
-
+    // Ajout des valeurs numériques à l'objet geostats pour les classifications
     geostatsObject.setSerie(valeursNumeriques);
     maxStats = geostatsObject.max();
-
-    statsMetadata = null;
   });
   return promesse;
 }
@@ -783,7 +779,7 @@ function resetHighlight(e) {
 /*
 Fonction gérant les événements liés à la carte (mouseout, mouseover...)
 */
-function onEachFeature(feature, layer) {
+function onEachFeatureCercle(feature, layer, layerCercle) {
   layer.on({
     mouseover: highlightFeature,
     mouseout: resetHighlight,
@@ -794,68 +790,30 @@ function onEachFeature(feature, layer) {
 }
 
 /*
-Fonction gérant les événements liés à la carte pour la Martinique
+Fonctions enrobant la fonction gérant les événements liés à la carte (mouseout, mouseover...)
 */
+function onEachFeature(feature, layer) {
+  onEachFeatureCercle(feature, layer, layerCercle);
+}
+
 function onEachFeatureMartinique(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (choixCercle.choixcercle.value=="cercles"){
-    creerCercle(feature, layer, layerCercleMartinique);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleMartinique);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureGuadeloupe(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (choixCercle.choixcercle.value=="cercles"){
-    creerCercle(feature, layer, layerCercleGuadeloupe);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleGuadeloupe);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureGuyane(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (choixCercle.choixcercle.value=="cercles"){
-    creerCercle(feature, layer, layerCercleGuyane);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleGuyane);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureReunion(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (choixCercle.choixcercle.value=="cercles"){
-    creerCercle(feature, layer, layerCercleReunion);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleReunion);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureMayotte(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (choixCercle.choixcercle.value=="cercles"){
-    creerCercle(feature, layer, layerCercleMayotte);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleMayotte);
 }
 
 /*
@@ -913,7 +871,7 @@ function creerLegende() {
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
 
-    var borneInf = valeurStat = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i], 2));
+    var borneInf = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i], 2));
     var borneSup = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i + 1], 2));
 
     if (borneSup == "NaN"){
