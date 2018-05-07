@@ -1,5 +1,23 @@
 body{
   font: 12px/12px Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+#titres{
+text-align: center;
+margin: auto;
+padding: auto;
+}
+
+#titrePrincipal{
+  font-size: 20px;
+  height: 30px;
+}
+
+#sousTitre{
+  font-size: 10px;
+  font-style: italic;
 }
 
 #conteneurMaps{
@@ -61,21 +79,11 @@ body{
   display: flex;
   flex-direction: row;
   font-size: 15px;
-  justify-content: space-between;
 }
 
 #mapsEtParametresPersonnalisation{
   display: flex;
   flex-direction: column;
-}
-
-body{
-  display: flex;
-  flex-direction: row;
-}
-
-#affichageStats{
-  border: 2px solid black;
 }
 
 .menuChoix{
