@@ -206,6 +206,8 @@ var placesDROM; //Même chose pour les DROM
 var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
+var couleurCercleNegatif;
+var couleurCerclePositif;
 var maxStats = NaN;
 var statsMetadata = null;
 var uniteStat; //Unité associée à la statistique
@@ -219,8 +221,9 @@ var controlInfo = L.control({position: 'topright'}); //Objet affichant les donn�
 var echelleAffichee = 'region';
 var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
+var statExiste = false;
 
-var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026']},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055']},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500']},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000']}}
+var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#123456',"couleurCercleNegatif":'#987654'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#123456',"couleurCercleNegatif":'#987654'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#123456',"couleurCercleNegatif":'#987654'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#A50120',"couleurCercleNegatif":'#A53920'}}
 
 
 /*------------------------Gestion des mises à jour géométrie et stats---------------------------*/
@@ -259,8 +262,10 @@ function majStats(){
   valeursNumeriques = [];
   var promesse = null;
   if (statsJson != '') {
+    statExiste = true;
     promesse = obtenirStats();
   } else {
+    statExiste = false;
     recupererMetadonneesStats();
 
     for (let i=0; i< places.features.length; i++) {
@@ -297,6 +302,8 @@ Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
 function majPaletteCouleur(){
   var i = choixPaletteCouleur.value;
   colors = colorPalettes[i].couleurs;
+  couleurCerclePositif = colorPalettes[i].couleurCerclePositif;
+  couleurCercleNegatif = colorPalettes[i].couleurCercleNegatif;
 }
 
 /*
@@ -426,7 +433,8 @@ function ajouterGeojsonLayers() {
   layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureGuyane}).addTo(mapGuyane);
   layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
   layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
-  if (choixCercle.choixcercle.value=="cercles" && choixStat.value!='-------'){
+
+  if (choixCercle.choixcercle.value == "cercles" && statExiste){
     layerCercle.addTo(mapFranceMetropolitaine);
     layerCercleGuadeloupe.addTo(mapGuadeloupe);
     layerCercleMartinique.addTo(mapMartinique);
@@ -439,8 +447,6 @@ function ajouterGeojsonLayers() {
     layerGuyane.bringToFront();
     layerReunion.bringToFront();
     layerMayotte.bringToFront();
-    // var i=0;
-    // layerCercleDROM.eachLayer(function(layer){console.log(layer);});
   }
 }
 
@@ -466,20 +472,12 @@ function recupererMetadonneesStats(){
     uniteStat = "";
   }
 
-  //Obtention du titre
-  try{
+  if (statExiste){
+    //Obtention du titre et suppression du sous-titre
     titreStat = statsMetadata.stat_name;
-    if (titreStat == undefined && choixStat.value != "-------"){
-      titreStat = "Création de cartes statistiques";
-      sousTitreStat = "Donnée non disponible à cette échelle";
-    }
-  }
-  catch{
+  }else{
     titreStat = "Création de cartes statistiques";
-    if (choixStat.value != "-------"){
-      sousTitreStat = "Donnée non disponible à cette échelle";
-    }
-
+    sousTitreStat = "Donnée non disponible à cette échelle";
   }
 
   titrePrincipal.innerHTML = titreStat;
@@ -675,7 +673,7 @@ function setCircleSize(stat,max_stat){
   if (isNaN(stat)==true){
     return 0
   }else{
-    return radius=Math.sqrt(stat)*(20/Math.sqrt(max_stat));
+    return radius=Math.sqrt(Math.abs(stat))*(20/Math.sqrt(max_stat));
   }
 }
 
@@ -788,7 +786,7 @@ function onEachFeature(feature, layer) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (choixCercle.choixcercle.value == "cercles"){
     creerCercle(feature, layer, layerCercle);
   }
 }
@@ -862,17 +860,22 @@ function onEachFeatureMayotte(feature, layer) {
 Fonction créant un cercle proportionnel dans layerCercle
 */
 function creerCercle(feature, layer, layerC){
-  if(choixCercle.choixcercle.value=="cercles"){
-    var stat = feature.properties["stats"];
-    var centroid = getCentroid(feature);
-    marq_circ=L.circleMarker(centroid, {
-      radius : setCircleSize(stat, maxStats),
-      color : '#7d3c98',
-      weight : 1,
-      fillOpacity: 0.6,
-      fillColor: colors[4]
-    }).addTo(layerC);
+  var stat = feature.properties["stats"];
+  var centroid = getCentroid(feature);
+
+  if (stat >= 0){
+    var couleurCercle = couleurCerclePositif;
   }
+  else {
+    var couleurCercle = couleurCercleNegatif;
+  }
+
+  marq_circ = L.circleMarker(centroid, {
+    radius : setCircleSize(stat, maxStats),
+    weight : 0,
+    fillOpacity: 0.6,
+    fillColor: couleurCercle
+  }).addTo(layerC);
 }
 
 /*--------------------Création et ajout des différents éléments de contrôle et d'habillage---------------------*/
@@ -887,21 +890,34 @@ function precisionDecimale(nombre, precision) {
 
 //Fonction permettant de créer la syntaxe HTML pour la légende
 function creerLegende() {
-  if (choixCercle.choixcercle.value=="cercles" && choixStat.value!='-------'){
+  if (choixCercle.choixcercle.value=="cercles" && statExiste){
     var div = L.DomUtil.create('div', 'info legend'),
       labels = [];
 
     var r2=10
     var v2=(r2/20*Math.sqrt(maxStats))**2
 
-    var legendeCercle = "<svg height='100' width='100'>";
-    legendeCercle += "<circle cx='30' cy='50' r='20' stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
-    legendeCercle += "<text x='52' y='45' fill='black'>"+maxStats.toString()+"</text>";
-    legendeCercle += "<circle cx='30' cy='60' r="+r2.toString()+" stroke='#7d3c98' stroke-width='1' stroke-opacity='1' fill='#bb8fce' fill-opacity='0.6' />";
-    legendeCercle += "<text x='47' y='75' fill='black'>"+v2.toString()+"</text>";
+    //Ouverture de la balise SVG
+    var legendeCercle = "<svg id='legendeSvg' height='52'>";
+
+    //Ajout des cercles
+    var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
+    var cercle2 = "<circle cx='25' cy='40' r=" + r2.toString() + " stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
+
+    //Ajout des lignes en pointillé
+    var ligne1 = "<line x1='25' y1='10' x2='60' y2='10' stroke='black' stroke-dasharray='3, 2' />"
+    var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
+
+    //Ajout des textes
+    var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ syntaxeNumeriqueFrancaise(maxStats) + "</text>";
+    var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ syntaxeNumeriqueFrancaise(v2) + "</text>";
+
+    legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2
+
+    //Fermeture de la balise SVG
     legendeCercle += "</svg>";
 
-    div.innerHTML = legendeCercle
+    div.innerHTML = legendeCercle;
 
   }else{
   var div = L.DomUtil.create('div', 'info legend'),
@@ -934,6 +950,26 @@ Fonction pour convertir les nombres avec la syntaxe française
 function syntaxeNumeriqueFrancaise(nombre){
   return d3.format(",")(nombre).replace(/,/g, " ").replace(".", ",");
 }
+
+/*
+Fonction pour mettre à jour la largeur de l'image SVG de la légende
+des cercles proportionnels pour optimiser l'affichage
+Ne peut être appelée qu'après ajout de cette image
+*/
+function majLargeurSvg(){
+  try{
+  var text1 = document.getElementById('text1');
+  var text2 = document.getElementById('text2');
+  var largueurMax = Math.max(text1.clientWidth,text2.clientWidth);
+  var legendeSvg = document.getElementById('legendeSvg');
+  legendeSvg.style.width = 65 + largueurMax;
+  }
+  catch{
+    //Ne rien faire
+  }
+}
+
+
 /*
 Fonction permettant d'afficher la légende
 */
@@ -942,6 +978,7 @@ function afficherLegende() {
     return creerLegende();
   };
   controlLegende.addTo(mapFranceMetropolitaine);
+  majLargeurSvg();
 }
 
 /*
