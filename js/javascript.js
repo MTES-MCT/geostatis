@@ -111,6 +111,11 @@ var mapMayotte = L.map('mapMayotte', {
   attributionControl: false
 });
 
+/*----------------------Gestion des cartes-----------------------*/
+
+/*
+Fonction pour ajuster le zoom des cartes afin de contenir les emprises
+*/
 function zoomSelonBounds() {
   //Zoom sur la France métropolitaine
   mapFranceMetropolitaine.fitBounds(maxBoundsFranceMetropolitaine);
@@ -121,8 +126,6 @@ function zoomSelonBounds() {
   mapReunion.fitBounds(maxBoundsReunion);
   mapMayotte.fitBounds(maxBoundsMayotte);
 }
-
-/*----------------------Propriétés des cartes Outre-Mer-----------------------*/
 
 /*
 Fonction pour bloquer la navigation dans dans une carte
@@ -147,8 +150,6 @@ function bloquerFonctionnalitesMapsOutreMer() {
   bloquerFonctionnalitesMap(mapMayotte);
 }
 
-/*----------------------Propriétés des cartes Outre-Mer-----------------------*/
-
 /*
 Fonction permettant l'ajout des couches sur les cartes à partir d'une URL du serveur de fonds de carte
 */
@@ -165,7 +166,6 @@ function ajouterFondsDeCartes(url) {
 
 /*-------------------------------Variables globales---------------------------*/
 
-var mapsEtParametresPersonnalisation = document.getElementById("mapsEtParametresPersonnalisation");
 //Ensemble des balises du fichier html
 var titrePrincipal = document.getElementById("titrePrincipal");
 var sousTitre = document.getElementById("sousTitre");
@@ -184,15 +184,12 @@ var afficheNombreClasses = document.getElementById("afficheNombreClasses");
 var choixCercle = document.getElementById("menuChoixCercle");
 afficheNombreClasses.innerHTML = nombreClasses.value;
 
-//Variables globales
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
 var layerGuadeloupe; //Objet layer GeoJSON de la Guadeloupe affiché sur la carte
 var layerMartinique; //Objet layer GeoJSON de la Martinique affiché sur la carte
 var layerGuyane; //Objet layer GeoJSON de la Guyane affiché sur la carte
 var layerReunion; //Objet layer GeoJSON de la Réunion affiché sur la carte
 var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
-
-var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
 
 var layerCercle = L.layerGroup(); //Objet layerGroup contenant les cercles propo
 var layerCercleGuadeloupe = L.layerGroup();
@@ -201,26 +198,25 @@ var layerCercleGuyane = L.layerGroup();
 var layerCercleReunion = L.layerGroup();
 var layerCercleMayotte = L.layerGroup();
 
-var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
-
+var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
+var topoJsonParEchelle = {}; //Tableau des TopoJSON par échelle
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
+var places; //Contiendra les géométries geoJSON de métropole issues du TopoJSON de l'échelle sélectionnée
+var placesDROM; //Même chose pour les DROM
 var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
-var controlLegende = L.control({position: 'bottomleft'}); //Légende
-var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
-var echelleAffichee = 'region';
-var stats;
-var maxStats=NaN;
+var maxStats = NaN;
 var statsMetadata = null;
-var places;
-var valeurs;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
-var valeursNumeriques = []; //Même tableau que valeurs mais qu'avec des nombres
+var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
 var geostatsObject = new geostats();
 var mode = choixMode.value;
 var valeurNombreClasses; //Nombre de classes
+var controlLegende = L.control({position: 'bottomleft'}); //Légende
+var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
+var echelleAffichee = 'region';
 var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 
@@ -602,7 +598,7 @@ function obtenirStats() {
     statsMetadata = stats.metadata;
 
     recupererMetadonneesStats();
-
+    var valeurs = [];
     if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
