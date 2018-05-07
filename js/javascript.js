@@ -62,7 +62,6 @@ Carte de la Guadeloupe
 var mapGuadeloupe = L.map('mapGuadeloupe', {
   center: [16.2490067,-61.5650444],
   zoom: 8,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -73,7 +72,6 @@ Carte de la Martinique
 var mapMartinique = L.map('mapMartinique', {
   center: [14.6553,-60.9906],
   zoom: 8,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -84,7 +82,6 @@ Carte de la Guyane
 var mapGuyane = L.map('mapGuyane', {
   center: [4.0039882, -52.9999980],
   zoom: 5,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -95,7 +92,6 @@ Carte de la Réunion
 var mapReunion = L.map('mapReunion', {
   center: [-21.1309332, 55.5265771],
   zoom: 8,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -106,7 +102,6 @@ Carte de Mayotte
 var mapMayotte = L.map('mapMayotte', {
   center: [-12.8230480, 45.1520755],
   zoom: 9,
-  zoomSnap:0.25,
   zoomControl:false,
   attributionControl: false
 });
@@ -150,11 +145,9 @@ function bloquerFonctionnalitesMapsOutreMer() {
 /*----------------------Propriétés des cartes Outre-Mer-----------------------*/
 
 /*
-Fonction permettant l'ajout des couches sur les cartes
+Fonction permettant l'ajout des couches sur les cartes à partir d'une URL du serveur de fonds de carte
 */
-function ajouterFondsDeCartes() {
-  //Url du serveur de fonds de carte
-  url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png'
+function ajouterFondsDeCartes(url) {
   //Ajout de la couche fond de carte France Métropolitaine
   L.tileLayer(url).addTo(mapFranceMetropolitaine);
   //Ajout de la couche fond de carte sur les DROM
@@ -191,6 +184,8 @@ var layerMartinique; //Objet layer GeoJSON de la Martinique affiché sur la cart
 var layerGuyane; //Objet layer GeoJSON de la Guyane affiché sur la carte
 var layerReunion; //Objet layer GeoJSON de la Réunion affiché sur la carte
 var layerMayotte; //Objet layer GeoJSON de Mayotte affiché sur la carte
+
+var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
 
 var topoJsonParEchelle = {}; //Tableau des géométries TopoJSON par échelle
 
@@ -921,7 +916,7 @@ function onLoad() {
   chargerAfficherGeometriesOnLoad();
   zoomSelonBounds();
   bloquerFonctionnalitesMapsOutreMer();
-  ajouterFondsDeCartes();
+  ajouterFondsDeCartes(url);
   afficherCartouche(mapFranceMetropolitaine);
   afficherLegende();
 }
