@@ -777,7 +777,7 @@ function styleCouleur(color){
   //Couleur de la Frontière par défaut
   var couleurFrontiere = 'white';
 
-  //Si la couche est la commune, la frontière prend la couleur que le remplissage
+  //Si la couche est la commune, la frontière prend la même couleur que le remplissage
   if (echelleAffichee == 'commune'){
     couleurFrontiere = color;
   }
@@ -787,7 +787,6 @@ function styleCouleur(color){
     weight: 1,
     opacity: 1,
     color: couleurFrontiere,
-    dashArray: '',
     fillOpacity: 0.7,
     fill: true
   };
@@ -968,25 +967,25 @@ function remplirLegendeCercle(div){
   var legendePositif = "";
   var legendeNegatif = "";
   var hauteurSvg = "52px";
+  var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
 
   //Cas où il n'existe que des valeurs positives
   if (minValeursNumeriques >= 0){
     //Le couleur des cercles de la légende celle affichée
-    var couleurCercleLegende = couleurCerclePositif;
+    couleurCercleLegende = couleurCerclePositif;
   }
   //Cas où il n'existe que des valeurs négatives
   else if (maxValeursNumeriques <= 0){
     //Le couleur des cercles de la légende sera celle affichée
-    var couleurCercleLegende = couleurCercleNegatif;
+    couleurCercleLegende = couleurCercleNegatif;
   }
   //Cas où il existe des valeurs positives et négatives
   else{
-    var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
     var maxAbsoluValeursNumeriques = Math.max(Math.abs(minValeursNumeriques),maxValeursNumeriques);
 
-    var legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
-    var legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
-    var hauteurSvg = "107px";
+    legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
+    legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
+    hauteurSvg = "107px";
   }
 
   var r2=10
@@ -1040,19 +1039,12 @@ des cercles proportionnels pour optimiser l'affichage
 Ne peut être appelée qu'après ajout de cette image
 */
 function majLargeurSvg(){
-  try{
-    var text1 = document.getElementById('text1');
-    var text2 = document.getElementById('text2');
-
-    var largeurText1 = Math.ceil(text1.getComputedTextLength());
-    var largeurText2 = Math.ceil(text2.getComputedTextLength());
-
-    var largueurMax = Math.max(largeurText1,largeurText2);
-
+  try {
     var legendeSvg = document.getElementById('legendeSvg');
-    legendeSvg.style.width = 65 + largueurMax;
+    var bbox = legendeSvg.getBBox();
+    legendeSvg.style.width = (bbox.width + 10) + "px";
   }
-  catch{
+  catch() {
     //Ne rien faire
   }
 }
