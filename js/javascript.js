@@ -207,7 +207,7 @@ var grades = [];
 var colors;
 var couleurCercleNegatif;
 var couleurCerclePositif;
-var maxStats = NaN;
+var maxAbsoluStats = NaN;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
@@ -477,7 +477,7 @@ function recupererMetadonneesStats(statsMetadata = null){
       uniteStat = "";
     }
   }
-  catch{
+  catch(error) {
     uniteStat = "";
   }
 
@@ -622,7 +622,7 @@ function obtenirStats(fichierJson) {
     valeursNumeriques = obtenirArrayNumerique(valeurs);
     // Ajout des valeurs numériques à l'objet geostats pour les classifications
     geostatsObject.setSerie(valeursNumeriques);
-    maxStats = geostatsObject.max();
+    maxAbsoluStats = Math.max(Math.abs(geostatsObject.min()),geostatsObject.max());
   });
   return promesse;
 }
@@ -892,7 +892,7 @@ function creerCercle(feature, layer, layerC){
     couleurCercle = couleurCercleNegatif;
   }
   var marqueurCercle = L.circleMarker(centroid, {
-    radius: setCircleSize(stat, maxStats),
+    radius: setCircleSize(stat, maxAbsoluStats),
     weight: 0.1,
     color: '#000000',
     opacity: 1.0,
@@ -981,15 +981,13 @@ function remplirLegendeCercle(div){
   }
   //Cas où il existe des valeurs positives et négatives
   else{
-    var maxAbsoluValeursNumeriques = Math.max(Math.abs(minValeursNumeriques),maxValeursNumeriques);
-
     legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
     legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
     hauteurSvg = "107px";
   }
 
   var r2=10
-  var v2=(r2/20*Math.sqrt(maxStats))**2
+  var v2=(r2/20*Math.sqrt(maxAbsoluStats))**2
 
   //Ouverture de la balise SVG
   var legendeCercle = "<svg id='legendeSvg' height='" + hauteurSvg + "'>";
@@ -1003,7 +1001,7 @@ function remplirLegendeCercle(div){
   var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
 
   //Ajout des textes
-  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxStats) + "</text>";
+  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxAbsoluStats) + "</text>";
   var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(v2) + "</text>";
 
   legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2 + legendePositif + legendeNegatif;
@@ -1044,7 +1042,7 @@ function majLargeurSvg(){
     var bbox = legendeSvg.getBBox();
     legendeSvg.style.width = (bbox.width + 10) + "px";
   }
-  catch() {
+  catch(error) {
     //Ne rien faire
   }
 }
