@@ -1,3 +1,5 @@
+'use strict';
+
 /*----------------------Variables des limites maximales-----------------------*/
 
 /*Limites maximales de la carte de la France métropolitaine*/
@@ -173,9 +175,7 @@ var choixRegion = document.getElementById("choixRegion");
 var choixDepartement = document.getElementById("choixDepartement");
 var choixCommune = document.getElementById("choixCommune");
 var choixEchelle = document.getElementById("menuChoixEchelle");
-var region = document.getElementById("region");
 var departement = document.getElementById("departement");
-var commune = document.getElementById("commune");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
@@ -203,13 +203,11 @@ var topoJsonParEchelle = {}; //Tableau des TopoJSON par échelle
 var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
 var places; //Contiendra les géométries geoJSON de métropole issues du TopoJSON de l'échelle sélectionnée
 var placesDROM; //Même chose pour les DROM
-var statsJson = ''; //Fichier JSON affichant les stats
 var grades = [];
 var colors;
 var couleurCercleNegatif;
 var couleurCerclePositif;
-var maxStats = NaN;
-var statsMetadata = null;
+var maxAbsoluStats = NaN;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
@@ -239,7 +237,6 @@ function majGeometrie() {
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
-  obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
   var promesse = majStats();
   if (!promesse) {
     majLegende();
@@ -258,16 +255,16 @@ Fonction permettant de mettre à jour les données statistiques pour un objet JS
 */
 function majStats(){
 
-  valeurs = [];
+  var cheminFichier = obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
   valeursNumeriques = [];
   var promesse = null;
-  if (statsJson != '') {
+  if (cheminFichier != '') {
     statExiste = true;
-    promesse = obtenirStats();
+    promesse = obtenirStats(cheminFichier);
   } else {
     statExiste = false;
-    recupererMetadonneesStats();
-
+    recupererMetadonneesStats(); // Réinitialisation des métadonnées
+    // Réinitialisation des statistiques sur les géométries
     for (let i=0; i< places.features.length; i++) {
       places.features[i].properties["stats"] = NaN;
     }
@@ -330,7 +327,7 @@ function majNombreClasses(){
 }
 
 /*
-Fonction permettant d'autoriser à l'utilisateur de choisir telle ou telle échelle en fonction du niveau de zoom (Région, département, EPCI, commune)
+Fonction permettant de choisir telle ou telle échelle (Région, département, commune)
 */
 function majEchelle() {
   if (choixEchelle.choixEchelle.value == "departement") {
@@ -391,8 +388,7 @@ function restreindreChoixEchelleSelonZoom() {
 /*
 Fonction permettant de charger un fichier TopoJSON pour être décompressé.
 */
-function chargerDecompresserTopoJSON(scale = echelleGeometrieJson) {
-
+function chargerDecompresserTopoJSON(scale) {
   var filename = "./fonds_carte/json/" + scale + ".json.txt";
   var promesse = d3.text(filename).then(function(data) {
     topoJsonParEchelle[scale] = JSON.parse(LZString.decompressFromUTF16(data));
@@ -406,8 +402,11 @@ Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
 function chargerAfficherGeometriesOnLoad(){
-  chargerDecompresserTopoJSON().then(majGeometrie);
-  chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+  chargerDecompresserTopoJSON(echelleGeometrieJson).then(majGeometrie);
+  // Dans le cas d'une visualisation normale, on précharge les départements et les communes
+  if (echelleGeometrieJson == "regions") {
+    chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+  }
 }
 
 /*
@@ -467,7 +466,7 @@ function ajouterGeojsonLayers() {
 Fonction pour permettre de récupérer les métadonnées de la statistique.
 Si elles n'existent pas, on ne donne pas d'unité et le titre est "Création de cartes statistiques"
 */
-function recupererMetadonneesStats(){
+function recupererMetadonneesStats(statsMetadata = null){
 
   var sousTitreStat = "";
 
@@ -478,7 +477,7 @@ function recupererMetadonneesStats(){
       uniteStat = "";
     }
   }
-  catch{
+  catch(error) {
     uniteStat = "";
   }
 
@@ -561,7 +560,7 @@ function remplirListeStats(){
 Fonction permettant de récupérer le chemin du fichier voulu
 */
 function obtenirCheminFichierJsonStats(){
-  statsJson = "./fichiers_stats/";
+  var statsJson = "./fichiers_stats/";
   var nomFichierStatsJson;
 
   try {
@@ -578,6 +577,7 @@ function obtenirCheminFichierJsonStats(){
   catch(error) {
     statsJson = "";
   }
+  return statsJson;
 }
 
 /*
@@ -599,19 +599,20 @@ function obtenirArrayNumerique(array){
 Fonction permettant de lire un fichier de statistiques et le traiter afin
 de les représenter sur les cartes.
 */
-function obtenirStats() {
+function obtenirStats(fichierJson) {
 
-  var promesse = d3.json(statsJson).then(function(stats) {
-    statsMetadata = stats.metadata;
-
-    recupererMetadonneesStats();
+  var promesse = d3.json(fichierJson).then(function(stats) {
+    // On essaye de récupérer les métadonnées de la stat
+    recupererMetadonneesStats(stats.metadata);
     var valeurs = [];
     if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
+      // Ajout des stats sur les objets géométriques de métropole
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
         valeurs.push(stats.data[code_insee]);
         places.features[i].properties["stats"] = stats.data[code_insee];
       }
+      // Ajout des stats sur les objets géométriques des DROM
       for (let i=0; i< placesDROM.features.length; i++) {
         let code_insee = placesDROM.features[i].properties.id;
         valeurs.push(stats.data[code_insee]);
@@ -619,11 +620,9 @@ function obtenirStats() {
       }
     }
     valeursNumeriques = obtenirArrayNumerique(valeurs);
-
+    // Ajout des valeurs numériques à l'objet geostats pour les classifications
     geostatsObject.setSerie(valeursNumeriques);
-    maxStats = geostatsObject.max();
-
-    statsMetadata = null;
+    maxAbsoluStats = Math.max(Math.abs(geostatsObject.min()),geostatsObject.max());
   });
   return promesse;
 }
@@ -682,7 +681,7 @@ function setCircleSize(stat,max_stat){
   if (isNaN(stat)==true){
     return 0
   }else{
-    return radius=Math.sqrt(Math.abs(stat))*(20/Math.sqrt(max_stat));
+    return Math.sqrt(Math.abs(stat))*(20/Math.sqrt(max_stat));
   }
 }
 
@@ -690,15 +689,16 @@ function setCircleSize(stat,max_stat){
 Fonction permettant de récupérer le centroide d'un Feature
 */
 function getCentroid(feature){
-  coord = feature.geometry.coordinates;
+  var coord = feature.geometry.coordinates;
+  var polygon = null;
   if (feature.geometry.type=="MultiPolygon"){
-    var polygon = turf.multiPolygon(coord);
+    polygon = turf.multiPolygon(coord);
   }else{
-    var polygon = turf.polygon(coord);
+    polygon = turf.polygon(coord);
   }
-  centro = turf.centroid(polygon).geometry.coordinates;
-  long = parseFloat(centro[0]);
-  lat = parseFloat(centro[1]);
+  var centro = turf.centroid(polygon).geometry.coordinates;
+  var long = parseFloat(centro[0]);
+  var lat = parseFloat(centro[1]);
   return L.latLng(lat, long);
 }
 
@@ -745,7 +745,7 @@ function styleCercles(color){
     opacite = 0;
   }
 
- return {
+  return {
     fillColor: color,
     weight: 1,
     opacity: opacite,
@@ -754,7 +754,7 @@ function styleCercles(color){
     fillOpacity: 0,
     fill: true
   };
-  }
+}
 
 /*
 Fonction permettant de créer le style des polygones si aucune statistique n'existe
@@ -777,7 +777,7 @@ function styleCouleur(color){
   //Couleur de la Frontière par défaut
   var couleurFrontiere = 'white';
 
-  //Si la couche est la commune, la frontière prend la couleur que le remplissage
+  //Si la couche est la commune, la frontière prend la même couleur que le remplissage
   if (echelleAffichee == 'commune'){
     couleurFrontiere = color;
   }
@@ -787,7 +787,6 @@ function styleCouleur(color){
     weight: 1,
     opacity: 1,
     color: couleurFrontiere,
-    dashArray: '3',
     fillOpacity: 0.7,
     fill: true
   };
@@ -840,7 +839,7 @@ function resetHighlight(e) {
 /*
 Fonction gérant les événements liés à la carte (mouseout, mouseover...)
 */
-function onEachFeature(feature, layer) {
+function onEachFeatureCercle(feature, layer, layerCercle) {
   layer.on({
     mouseover: highlightFeature,
     mouseout: resetHighlight,
@@ -851,68 +850,30 @@ function onEachFeature(feature, layer) {
 }
 
 /*
-Fonction gérant les événements liés à la carte pour la Martinique
+Fonctions enrobant la fonction gérant les événements liés à la carte (mouseout, mouseover...)
 */
+function onEachFeature(feature, layer) {
+  onEachFeatureCercle(feature, layer, layerCercle);
+}
+
 function onEachFeatureMartinique(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (mode == "cerclesProportionnels"){
-    creerCercle(feature, layer, layerCercleMartinique);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleMartinique);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureGuadeloupe(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (mode == "cerclesProportionnels"){
-    creerCercle(feature, layer, layerCercleGuadeloupe);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleGuadeloupe);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureGuyane(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (mode == "cerclesProportionnels"){
-    creerCercle(feature, layer, layerCercleGuyane);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleGuyane);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureReunion(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (mode == "cerclesProportionnels"){
-    creerCercle(feature, layer, layerCercleReunion);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleReunion);
 }
 
-/*
-Fonction gérant les événements liés à la carte pour la Martinique
-*/
 function onEachFeatureMayotte(feature, layer) {
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-  });
-  if (mode == "cerclesProportionnels"){
-    creerCercle(feature, layer, layerCercleMayotte);
-  }
+  onEachFeatureCercle(feature, layer, layerCercleMayotte);
 }
 
 /*
@@ -923,17 +884,15 @@ function creerCercle(feature, layer, layerC){
   var centroid = getCentroid(feature);
 
   //Définition de la couleur du cercle en fonction de sa valeur
+  var couleurCercle = '#000000';
   if (stat >= 0){
-    var couleurCercle = couleurCerclePositif;
+    couleurCercle = couleurCerclePositif;
   }
   else if (stat < 0) {
-    var couleurCercle = couleurCercleNegatif;
+    couleurCercle = couleurCercleNegatif;
   }
-  else{
-    var couleurCercle = '#000000';
-  }
-  marqueurCercle = L.circleMarker(centroid, {
-    radius: setCircleSize(stat, maxStats),
+  var marqueurCercle = L.circleMarker(centroid, {
+    radius: setCircleSize(stat, maxAbsoluStats),
     weight: 0.1,
     color: '#000000',
     opacity: 1.0,
@@ -981,9 +940,8 @@ function remplirLegendeCouleur(div){
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
 
-    var borneInf = valeurStat = ecritureScientifique(precisionDecimale(grades[i], 2));
+    var borneInf = ecritureScientifique(precisionDecimale(grades[i], 2));
     var borneSup = ecritureScientifique(precisionDecimale(grades[i + 1], 2));
-    console.log(borneSup);
 
     if (borneSup == "NaN</sup>"){
       borneSup = '+';
@@ -1009,29 +967,27 @@ function remplirLegendeCercle(div){
   var legendePositif = "";
   var legendeNegatif = "";
   var hauteurSvg = "52px";
+  var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
 
   //Cas où il n'existe que des valeurs positives
   if (minValeursNumeriques >= 0){
     //Le couleur des cercles de la légende celle affichée
-    var couleurCercleLegende = couleurCerclePositif;
+    couleurCercleLegende = couleurCerclePositif;
   }
   //Cas où il n'existe que des valeurs négatives
   else if (maxValeursNumeriques <= 0){
     //Le couleur des cercles de la légende sera celle affichée
-    var couleurCercleLegende = couleurCercleNegatif;
+    couleurCercleLegende = couleurCercleNegatif;
   }
   //Cas où il existe des valeurs positives et négatives
   else{
-    var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
-    var maxAbsoluValeursNumeriques = Math.max(Math.abs(minValeursNumeriques),maxValeursNumeriques);
-
-    var legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
-    var legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
-    var hauteurSvg = "107px";
+    legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
+    legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
+    hauteurSvg = "107px";
   }
 
   var r2=10
-  var v2=(r2/20*Math.sqrt(maxStats))**2
+  var v2=(r2/20*Math.sqrt(maxAbsoluStats))**2
 
   //Ouverture de la balise SVG
   var legendeCercle = "<svg id='legendeSvg' height='" + hauteurSvg + "'>";
@@ -1045,7 +1001,7 @@ function remplirLegendeCercle(div){
   var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
 
   //Ajout des textes
-  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxStats) + "</text>";
+  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxAbsoluStats) + "</text>";
   var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(v2) + "</text>";
 
   legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2 + legendePositif + legendeNegatif;
@@ -1081,19 +1037,12 @@ des cercles proportionnels pour optimiser l'affichage
 Ne peut être appelée qu'après ajout de cette image
 */
 function majLargeurSvg(){
-  try{
-    var text1 = document.getElementById('text1');
-    var text2 = document.getElementById('text2');
-
-    var largeurText1 = Math.ceil(text1.getComputedTextLength());
-    var largeurText2 = Math.ceil(text2.getComputedTextLength());
-
-    var largueurMax = Math.max(largeurText1,largeurText2);
-
+  try {
     var legendeSvg = document.getElementById('legendeSvg');
-    legendeSvg.style.width = 65 + largueurMax;
+    var bbox = legendeSvg.getBBox();
+    legendeSvg.style.width = (bbox.width + 10) + "px";
   }
-  catch{
+  catch(error) {
     //Ne rien faire
   }
 }
