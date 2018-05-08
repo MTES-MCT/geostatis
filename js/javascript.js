@@ -179,9 +179,9 @@ var departement = document.getElementById("departement");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
+var menuChoixNombreClasses = document.getElementById("menuChoixNombreClasses");
 var nombreClasses = document.getElementById("nombreClasses");
 var afficheNombreClasses = document.getElementById("afficheNombreClasses");
-var choixCercle = document.getElementById("menuChoixCercle");
 afficheNombreClasses.innerHTML = nombreClasses.value;
 
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
@@ -221,7 +221,7 @@ var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 var statExiste = false;
 
-var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#123456',"couleurCercleNegatif":'#987654'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#123456',"couleurCercleNegatif":'#987654'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#123456',"couleurCercleNegatif":'#987654'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#A50120',"couleurCercleNegatif":'#A53920'}}
+var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
 
 
 /*------------------------Gestion des mises à jour géométrie et stats---------------------------*/
@@ -287,10 +287,20 @@ function majLegende(){
 }
 
 /*
-Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné
+Fonction pour permettre de mettre à jour le mode d'intervalle sélectionné.
+Si "cerclesProportionnels" est sélectionné, il devient impossible de choisir
+le nombre de classes.
 */
 function majMode(){
   mode = choixMode.value;
+  if (mode == "cerclesProportionnels"){
+    nombreClasses.disabled = true;
+    menuChoixNombreClasses.style.display = 'none';
+  }
+  else{
+    nombreClasses.disabled = false;
+    menuChoixNombreClasses.style.display = '';
+  }
 }
 
 /*
@@ -433,7 +443,7 @@ function ajouterGeojsonLayers() {
   layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
   layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
 
-  if (choixCercle.choixcercle.value == "cercles" && statExiste){
+  if (mode == "cerclesProportionnels" && statExiste){
     layerCercle.addTo(mapFranceMetropolitaine);
     layerCercleGuadeloupe.addTo(mapGuadeloupe);
     layerCercleMartinique.addTo(mapMartinique);
@@ -539,7 +549,6 @@ function remplirListeStats(){
     }
     lireFichiersStatDeListe().then(function(){
       choixStat.innerHTML = "<option>-------</option>\n";
-      choixStat.style = "width:50px;"
       for (var i=0; i<listeStats.length;i++){
         choixStat.innerHTML += "<option value =" + i +">" + listeStatsEtTitres[i][1] + "</option>\n";
       }
@@ -697,23 +706,60 @@ function getCentroid(feature){
 Fonction permettant de créer le style des polygones
 */
 function style(feature) {
-  var color = ["#AAAAAA"];
-  var valeur = feature.properties.stats;
+  var color = "#AAAAAA"; //Couleur du remplissage par défaut
+  var valeur = feature.properties.stats; //Valeur statistique numérique liée à une zone
+
+  //Récupération de la couleur associée à la valeur (si elle est numérique)
   if (!isNaN(valeur) && valeur != null && valeur != "") {
     color = obtenirCouleur(valeur);
   }
-  if (choixCercle.choixcercle.value=="cercles"){
-    return {
-      fillColor: color,
-      weight: 1,
-      opacity: 1,
-      color: 'black',
-      dashArray: '3',
-      fillOpacity: 0,
-      fill: true
-    };
+
+  //Cas où aucune statistique existe
+  if (!statExiste){
+    var couleurDefaut = "#AAAAAA"; //Couleur du remplissage par défaut
+    var styleGeometrie = styleDefaut(couleurDefaut);
   }
-  if (choixEchelle.choixEchelle.value == "commune") {
+  //Cas où on affiche des cercles proportionnels
+  else if(mode == "cerclesProportionnels"){
+    styleGeometrie = styleCercles(color);
+  }
+  //Cas où on affiche des données colorisées
+  else{
+    styleGeometrie = styleCouleur(color);
+  }
+
+  return styleGeometrie;
+}
+
+/*
+Fonction permettant de créer le style des polygones si "cerclesProportionnels"
+est choisi.
+/!\ Cette fonction ne donne par le style des cercles.
+*/
+function styleCercles(color){
+  //Opacité de la frontère par défaut
+  var opacite = 1;
+
+  //Si la couche est la commune, la frontière devient invisible
+  if (echelleAffichee == 'commune'){
+    opacite = 0;
+  }
+
+  return {
+    fillColor: color,
+    weight: 1,
+    opacity: opacite,
+    color: 'black',
+    dashArray: '3',
+    fillOpacity: 0,
+    fill: true
+  };
+}
+
+/*
+Fonction permettant de créer le style des polygones si aucune statistique n'existe
+*/
+function styleDefaut(color){
     return {
       fillColor: color,
       weight: 1,
@@ -723,12 +769,25 @@ function style(feature) {
       fill: true
     };
   }
+
+/*
+Fonction permettant de créer le style des polygones si on désire colorier les régions
+*/
+function styleCouleur(color){
+  //Couleur de la Frontière par défaut
+  var couleurFrontiere = 'white';
+
+  //Si la couche est la commune, la frontière prend la couleur que le remplissage
+  if (echelleAffichee == 'commune'){
+    couleurFrontiere = color;
+  }
+
   return {
     fillColor: color,
     weight: 1,
     opacity: 1,
-    color: 'white',
-    dashArray: '3',
+    color: couleurFrontiere,
+    dashArray: '',
     fillOpacity: 0.7,
     fill: true
   };
@@ -740,7 +799,7 @@ Surbrillance de la carte
 function highlightFeature(e) {
   var layer = e.target;
 
-  if (choixCercle.choixcercle.value=="cercles"){
+  if (mode == "cerclesProportionnels"){
     layer.setStyle({
       fillColor: '#3498db',
       weight: 3,
@@ -786,7 +845,7 @@ function onEachFeatureCercle(feature, layer, layerCercle) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (choixCercle.choixcercle.value == "cercles"){
+  if (mode == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercle);
   }
 }
@@ -825,14 +884,19 @@ function creerCercle(feature, layer, layerC){
   var stat = feature.properties["stats"];
   var centroid = getCentroid(feature);
 
-  var couleurCercle = couleurCerclePositif;
-  if (stat < 0){
+  //Définition de la couleur du cercle en fonction de sa valeur
+  var couleurCercle = '#000000';
+  if (stat >= 0){
+    couleurCercle = couleurCerclePositif;
+  }
+  else if (stat < 0) {
     couleurCercle = couleurCercleNegatif;
   }
-
-  var marq_circ = L.circleMarker(centroid, {
-    radius : setCircleSize(stat, maxStats),
-    weight : 0,
+  var marqueurCercle = L.circleMarker(centroid, {
+    radius: setCircleSize(stat, maxStats),
+    weight: 0.1,
+    color: '#000000',
+    opacity: 1.0,
     fillOpacity: 0.6,
     fillColor: couleurCercle
   }).addTo(layerC);
@@ -855,7 +919,7 @@ function creerLegende() {
       labels = [];
 
   //Mise à jour de la légende si on choisit des cercles proportionnels
-  if (choixCercle.choixcercle.value=="cercles" && statExiste){
+  if (mode == "cerclesProportionnels" && statExiste){
     div = remplirLegendeCercle(div);
   }
   //Mise à jour de la légende si on choisit de colorier les zones
@@ -877,10 +941,10 @@ function remplirLegendeCouleur(div){
   // Boucle pour ajouter dans la légende : la couleur et les bornes
   for (var i = 0; i < grades.length; i++) {
 
-    var borneInf = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i], 2));
-    var borneSup = syntaxeNumeriqueFrancaise(precisionDecimale(grades[i + 1], 2));
+    var borneInf = ecritureScientifique(precisionDecimale(grades[i], 2));
+    var borneSup = ecritureScientifique(precisionDecimale(grades[i + 1], 2));
 
-    if (borneSup == "NaN"){
+    if (borneSup == "NaN</sup>"){
       borneSup = '+';
     }
 
@@ -898,25 +962,52 @@ des cercles proportionnels
 */
 function remplirLegendeCercle(div){
 
+  var minValeursNumeriques = Math.min(...valeursNumeriques);
+  var maxValeursNumeriques = Math.max(...valeursNumeriques);
+
+  var legendePositif = "";
+  var legendeNegatif = "";
+  var hauteurSvg = "52px";
+
+  //Cas où il n'existe que des valeurs positives
+  if (minValeursNumeriques >= 0){
+    //Le couleur des cercles de la légende celle affichée
+    var couleurCercleLegende = couleurCerclePositif;
+  }
+  //Cas où il n'existe que des valeurs négatives
+  else if (maxValeursNumeriques <= 0){
+    //Le couleur des cercles de la légende sera celle affichée
+    var couleurCercleLegende = couleurCercleNegatif;
+  }
+  //Cas où il existe des valeurs positives et négatives
+  else{
+    var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
+    var maxAbsoluValeursNumeriques = Math.max(Math.abs(minValeursNumeriques),maxValeursNumeriques);
+
+    var legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
+    var legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
+    var hauteurSvg = "107px";
+  }
+
   var r2=10
   var v2=(r2/20*Math.sqrt(maxStats))**2
 
   //Ouverture de la balise SVG
-  var legendeCercle = "<svg id='legendeSvg' height='52'>";
+  var legendeCercle = "<svg id='legendeSvg' height='" + hauteurSvg + "'>";
 
   //Ajout des cercles
-  var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
-  var cercle2 = "<circle cx='25' cy='40' r=" + r2.toString() + " stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCerclePositif + " fill-opacity='0.6' />";
+  var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
+  var cercle2 = "<circle cx='25' cy='40' r=" + r2.toString() + " stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
 
   //Ajout des lignes en pointillé
   var ligne1 = "<line x1='25' y1='10' x2='60' y2='10' stroke='black' stroke-dasharray='3, 2' />"
   var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
 
   //Ajout des textes
-  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ syntaxeNumeriqueFrancaise(maxStats) + "</text>";
-  var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ syntaxeNumeriqueFrancaise(v2) + "</text>";
+  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxStats) + "</text>";
+  var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(v2) + "</text>";
 
-  legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2
+  legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2 + legendePositif + legendeNegatif;
 
   //Fermeture de la balise SVG
   legendeCercle += "</svg>";
@@ -927,9 +1018,19 @@ function remplirLegendeCercle(div){
 }
 
 /*
-Fonction pour convertir les nombres avec la syntaxe française
+Fonction pour convertir les nombres avec l'écriture scientifique avec les
+conventions françaises.
 */
-function syntaxeNumeriqueFrancaise(nombre){
+function ecritureScientifique(nombre){
+  var nouveauNombre = d3.format(".4")(nombre).replace(/e/g, "x10<sup>") + "</sup>";
+
+  return nouveauNombre.replace(/,/g, " ").replace(".", ",");
+}
+
+/*
+Fonction pour convertir les nombres avec l'écriture française
+*/
+function ecritureNumeriqueFrancaise(nombre){
   return d3.format(",")(nombre).replace(/,/g, " ").replace(".", ",");
 }
 
@@ -942,7 +1043,12 @@ function majLargeurSvg(){
   try{
     var text1 = document.getElementById('text1');
     var text2 = document.getElementById('text2');
-    var largueurMax = Math.max(text1.clientWidth,text2.clientWidth);
+
+    var largeurText1 = Math.ceil(text1.getComputedTextLength());
+    var largeurText2 = Math.ceil(text2.getComputedTextLength());
+
+    var largueurMax = Math.max(largeurText1,largeurText2);
+
     var legendeSvg = document.getElementById('legendeSvg');
     legendeSvg.style.width = 65 + largueurMax;
   }
@@ -989,7 +1095,7 @@ function afficherCartouche(mapObject) {
 
     if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
       valeurStat = parseFloat(properties.stats);
-      valeurStat = syntaxeNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
+      valeurStat = ecritureNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
     }
     if (valeurStat != "Non connue"){
       nomUnite = uniteStat;
@@ -1095,7 +1201,6 @@ choixMode.addEventListener("change",majGeometrie);
 choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
-choixCercle.addEventListener("change",majGeometrie);
 
 document.getElementById('export').addEventListener('click', function(e) {
   // html2canvas(document.getElementById('conteneurMaps')).then(function(canvas) {

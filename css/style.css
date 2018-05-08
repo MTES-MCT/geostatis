@@ -2,6 +2,7 @@ body{
   font: 12px/12px Arial, Helvetica, sans-serif;
   display: flex;
   flex-direction: column;
+  max-width: 800px;
 }
 
 #titres{
@@ -26,7 +27,7 @@ padding: auto;
 }
 
 #mapFranceMetropolitaine {
-  width: 555px;
+  width: 100%;
   border-style: solid;
   border-width: 1px;
   border-color: black;
@@ -46,7 +47,6 @@ padding: auto;
 #mapMayotte{
   border-bottom-width: 1px;
 }
-
 
 .controlInfo, .info {
       padding: 6px 8px;
@@ -74,16 +74,20 @@ padding: auto;
       opacity: 0.7;
   }
 
-
 #parametresPersonnalisation{
   display: flex;
   flex-direction: row;
   font-size: 15px;
+  justify-content: space-around;:
 }
 
 #mapsEtParametresPersonnalisation{
   display: flex;
   flex-direction: column;
+}
+
+.titreMenu{
+  font-weight: bold;
 }
 
 .menuChoix{
@@ -92,3 +96,33 @@ padding: auto;
   align-items:center;
   margin-top: 10px;
   }
+
+#choixStat{
+  width:50px;
+}
+
+#choixModePaletteCouleurNombreClasses{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+@media only screen and (max-width: 750px) {
+    #parametresPersonnalisation {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #menuChoixEchelle{
+      flex-direction: row;
+      justify-content: space-around;
+    }
+
+    #choixModePaletteCouleurNombreClasses{
+      flex-direction: row;
+    }
+
+    #choixStat{
+      width:75%;
+    }
+}
