@@ -237,6 +237,12 @@ function majGeometrie() {
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
+  //Peut être dans majGeometrie()
+  // if (mapFranceMetropolitaine.getZoom() >= 8 && choixEchelle.choixEchelle.value == "commune"){
+  //   placesAvecBasePostGis();
+  // }
+
+
   var promesse = majStats();
   if (!promesse) {
     majLegende();
@@ -952,6 +958,11 @@ function remplirLegendeCouleur(div){
         borneInf + ' &ndash; ' + borneSup + '<br>';
   }
 
+  //Ajout de l'unité si elle existe
+  if (uniteStat != ""){
+    div.innerHTML += "<i style='font-style:italic;color:black;'>Unité&nbsp;:" + uniteStat.replace(" ", "&nbsp;") + "</i><br>";
+  }
+
   return div;
 }
 
@@ -966,8 +977,16 @@ function remplirLegendeCercle(div){
 
   var legendePositif = "";
   var legendeNegatif = "";
-  var hauteurSvg = "52px";
+  var nomUnite = "Sans unité";
   var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
+
+  if (uniteStat != ""){
+    nomUnite = uniteStat;
+  }
+
+  var unite = "<text x='5' y='70' font-style = 'italic' fill='black'>Unité : " + nomUnite + "</text>"; //Nom de l'unité
+
+
 
   //Cas où il n'existe que des valeurs positives
   if (minValeursNumeriques >= 0){
@@ -983,14 +1002,16 @@ function remplirLegendeCercle(div){
   else{
     legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
     legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
-    hauteurSvg = "107px";
+    if (uniteStat != ""){
+      unite = "<text x='10' y='125' font-style = 'italic' fill='black'>Unité : " + nomUnite + "</text>"; //Nom de l'unité
+    }
   }
 
-  var r2=10
-  var v2=(r2/20*Math.sqrt(maxAbsoluStats))**2
+  var r2=10;
+  var v2=(r2/20*Math.sqrt(maxAbsoluStats))**2;
 
   //Ouverture de la balise SVG
-  var legendeCercle = "<svg id='legendeSvg' height='" + hauteurSvg + "'>";
+  var legendeCercle = "<svg id='legendeSvg'>";
 
   //Ajout des cercles
   var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
@@ -1001,10 +1022,10 @@ function remplirLegendeCercle(div){
   var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
 
   //Ajout des textes
-  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxAbsoluStats) + "</text>";
-  var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(v2) + "</text>";
+  var text1 = "<text x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxAbsoluStats) + "</text>";
+  var text2 = "<text x='65' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(v2) + "</text>";
 
-  legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2 + legendePositif + legendeNegatif;
+  legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2 + unite + legendePositif + legendeNegatif;
 
   //Fermeture de la balise SVG
   legendeCercle += "</svg>";
@@ -1021,7 +1042,7 @@ conventions françaises.
 function ecritureScientifique(nombre){
   var nouveauNombre = d3.format(".4")(nombre).replace(/e/g, "x10<sup>") + "</sup>";
 
-  return nouveauNombre.replace(/,/g, " ").replace(".", ",");
+  return nouveauNombre.replace(/,/g, " ").replace(".", ",").replace("+", "");
 }
 
 /*
@@ -1041,6 +1062,7 @@ function majLargeurSvg(){
     var legendeSvg = document.getElementById('legendeSvg');
     var bbox = legendeSvg.getBBox();
     legendeSvg.style.width = (bbox.width + 10) + "px";
+    legendeSvg.style.height = (bbox.height) + "px";
   }
   catch(error) {
     //Ne rien faire
@@ -1191,3 +1213,52 @@ choixMode.addEventListener("change",majGeometrie);
 choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
+
+/*------------------------------Fonctions extras------------------------------*/
+
+//Fonction permettant d'afficher seulement des communes de la bbox
+function placesAvecBasePostGis(){
+
+  //Définition des limites avec un pas pour se donner une marge (en degrés)
+  var bounds = mapFranceMetropolitaine.getBounds();
+  var pas = 0; //Marge (en degrés) donnée pour la bbox
+  var xmin = bounds.getEast() - pas;
+  var xmax = bounds.getWest() + pas;
+  var ymin = bounds.getSouth() - pas;
+  var ymax = bounds.getNorth() + pas;
+
+  //Écriture de la requete à envoyer au fichier php qui renverra un geojson
+  var data = "xmin=" + xmin;
+  data += "&xmax=" + xmax;
+  data += "&ymin=" + ymin;
+  data += "&ymax=" + ymax;
+
+  //Initialisation de la variable AJAX
+  var ajaxPostGis = new XMLHttpRequest();
+
+  //Destination et type de la requête AJAX (asynchrone)
+  ajaxPostGis.open('POST', './fichiers_php/connecter_base_postgis.php', false);
+
+  //Métadonnées de la requête AJAX
+  ajaxPostGis.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+  //Événement de changement d'état de la requête
+  ajaxPostGis.addEventListener('readystatechange',  function(e) {
+      //Si l'état est le numéro 4 et que la ressource est trouvée
+      if(ajaxPostGis.readyState == 4 && ajaxPostGis.status == 200) {
+
+        //Retour de la requete (soit 'erreur' soit un geojson)
+        var resultat = ajaxPostGis.responseText;
+
+        //Cas où il n'y a pas d'erreur
+        if (resultat!= "erreur"){
+          //Mise à jour de la géométrie
+          places = JSON.parse(ajaxPostGis.responseText);
+        }
+
+      }})
+
+  //Envoi de la requête à connecter_base_postgis.php
+  ajaxPostGis.send(data);
+
+}
