@@ -171,18 +171,12 @@ function ajouterFondsDeCartes(url) {
 //Ensemble des balises du fichier html
 var titrePrincipal = document.getElementById("titrePrincipal");
 var sousTitre = document.getElementById("sousTitre");
-var choixRegion = document.getElementById("choixRegion");
-var choixDepartement = document.getElementById("choixDepartement");
-var choixCommune = document.getElementById("choixCommune");
-var choixEchelle = document.getElementById("menuChoixEchelle");
-var departement = document.getElementById("departement");
+var menuChoixEchelle = document.getElementById("menuChoixEchelle");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
 var menuChoixNombreClasses = document.getElementById("menuChoixNombreClasses");
 var nombreClasses = document.getElementById("nombreClasses");
-var afficheNombreClasses = document.getElementById("afficheNombreClasses");
-afficheNombreClasses.innerHTML = nombreClasses.value;
 
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
 var layerGuadeloupe; //Objet layer GeoJSON de la Guadeloupe affiché sur la carte
@@ -212,8 +206,6 @@ var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
 var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
 var geostatsObject = new geostats();
-var mode = choixMode.value;
-var valeurNombreClasses; //Nombre de classes
 var controlLegende = L.control({position: 'bottomleft'}); //Légende
 var controlInfo = L.control({position: 'topright'}); //Objet affichant les données de la zone de survol
 var echelleAffichee = 'region';
@@ -292,8 +284,7 @@ Si "cerclesProportionnels" est sélectionné, il devient impossible de choisir
 le nombre de classes.
 */
 function majMode(){
-  mode = choixMode.value;
-  if (mode == "cerclesProportionnels"){
+  if (choixMode.value == "cerclesProportionnels"){
     nombreClasses.disabled = true;
     menuChoixNombreClasses.style.display = 'none';
   }
@@ -319,28 +310,25 @@ entré avec la barre
 */
 function majNombreClasses(){
   var tempNombreClasses = parseInt(nombreClasses.value);
-  if (isNaN(tempNombreClasses)) {
-    tempNombreClasses = 5;
-  }
+  var afficheNombreClasses = document.getElementById("afficheNombreClasses");
   afficheNombreClasses.innerHTML = tempNombreClasses;
-  valeurNombreClasses = tempNombreClasses;
 }
 
 /*
 Fonction permettant de choisir telle ou telle échelle (Région, département, commune)
 */
 function majEchelle() {
-  if (choixEchelle.choixEchelle.value == "departement") {
+  if (menuChoixEchelle.choixEchelle.value == "departement") {
     echelleGeometrieJson = "departements";
   }
-  else if (choixEchelle.choixEchelle.value == "commune") {
+  else if (menuChoixEchelle.choixEchelle.value == "commune") {
     echelleGeometrieJson = "communes";
   }
   else {
     echelleGeometrieJson = "regions";
   }
   //Mise à jour de l'échelle affichée
-  echelleAffichee = choixEchelle.choixEchelle.value;
+  echelleAffichee = menuChoixEchelle.choixEchelle.value;
 }
 
 /*
@@ -349,7 +337,7 @@ lorsque l'utilisateur change et non lorsqu'il clique une nouvelle fois sur la
 même échelle.
 */
 function onClickChoixEchelle(){
-  if (choixEchelle.choixEchelle.value != echelleAffichee){
+  if (menuChoixEchelle.choixEchelle.value != echelleAffichee){
     majGeometrie();
   }
 }
@@ -360,24 +348,22 @@ en fonction du niveau de zoom
 */
 function restreindreChoixEchelleSelonZoom() {
   var niveauZoom = mapFranceMetropolitaine.getZoom();
+  var choixRegion = document.getElementById("choixRegion");
 
   if (niveauZoom < 8) {
     //On affiche toutes les possibilités
-    choixCommune.style.display = "block";
-    choixDepartement.style.display = "block";
     choixRegion.style.display = "block";
   } else {
     /*
     On enlève la carte des régions si le niveau de zoom est supérieur à 8.
     On met celle des départements par défaut
     */
-    if (choixEchelle.choixEchelle.value == "region") {
+    if (menuChoixEchelle.choixEchelle.value == "region") {
+      var departement = document.getElementById("departement");
       departement.checked = true;
       majGeometrie();
     }
     //On cache la case des régions
-    choixCommune.style.display = "block";
-    choixDepartement.style.display = "block";
     choixRegion.style.display = "none";
   }
 }
@@ -443,7 +429,7 @@ function ajouterGeojsonLayers() {
   layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
   layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
 
-  if (mode == "cerclesProportionnels" && statExiste){
+  if (choixMode.value == "cerclesProportionnels" && statExiste){
     layerCercle.addTo(mapFranceMetropolitaine);
     layerCercleGuadeloupe.addTo(mapGuadeloupe);
     layerCercleMartinique.addTo(mapMartinique);
@@ -565,7 +551,7 @@ function obtenirCheminFichierJsonStats(){
 
   try {
     nomFichierStatsJson = listeStatsEtTitres[parseFloat(choixStat.value)][0];
-    nomFichierStatsJson += "_" + choixEchelle.choixEchelle.value + ".json";
+    nomFichierStatsJson += "_" + menuChoixEchelle.choixEchelle.value + ".json";
 
     if (!listeFichiersJson.includes(nomFichierStatsJson)){
       statsJson = "";
@@ -605,7 +591,7 @@ function obtenirStats(fichierJson) {
     // On essaye de récupérer les métadonnées de la stat
     recupererMetadonneesStats(stats.metadata);
     var valeurs = [];
-    if (stats.metadata.scale == choixEchelle.choixEchelle.value) {
+    if (stats.metadata.scale == menuChoixEchelle.choixEchelle.value) {
       // Ajout des stats sur les objets géométriques de métropole
       for (let i=0; i< places.features.length; i++) {
         let code_insee = places.features[i].properties.id;
@@ -638,20 +624,25 @@ function obtenirBornes(){
   if (valeursNumeriques.length == 0){
     grades = [];
   }
-  else if (mode == 'intervallesEgaux'){
-    grades = geostatsObject.getClassEqInterval(valeurNombreClasses).slice(0, -1);
-  }
-  else if (mode == 'effectifsEgaux'){
-    grades = geostatsObject.getClassQuantile(valeurNombreClasses).slice(0, -1);
-  }
-  else if (mode == 'ecartType'){
-    grades = geostatsObject.getClassStdDeviation(valeurNombreClasses).slice(0, -1);
-  }
-  else if (mode == 'rupturesNaturelles'){
-    grades = geostatsObject.getClassJenks(valeurNombreClasses).slice(0, -1);
-  }
-  else{
-    //Voir ce qu'il faut faire
+  else {
+    var valeurNombreClasses = nombreClasses.value;
+    switch(choixMode.value) {
+      case 'intervallesEgaux':
+        grades = geostatsObject.getClassEqInterval(valeurNombreClasses).slice(0, -1);
+        break;
+      case 'effectifsEgaux':
+        grades = geostatsObject.getClassQuantile(valeurNombreClasses).slice(0, -1);
+        break;
+      case 'ecartType':
+        grades = geostatsObject.getClassStdDeviation(valeurNombreClasses).slice(0, -1);
+        break;
+      case 'rupturesNaturelles':
+        grades = geostatsObject.getClassJenks(valeurNombreClasses).slice(0, -1);
+        break;
+      default:
+        //Voir ce qu'il faut faire
+        break;
+    }
   }
 }
 
@@ -706,26 +697,27 @@ function getCentroid(feature){
 Fonction permettant de créer le style des polygones
 */
 function style(feature) {
-  var color = "#AAAAAA"; //Couleur du remplissage par défaut
+  var couleur = "#AAAAAA"; //Couleur du remplissage par défaut
   var valeur = feature.properties.stats; //Valeur statistique numérique liée à une zone
-
-  //Récupération de la couleur associée à la valeur (si elle est numérique)
-  if (!isNaN(valeur) && valeur != null && valeur != "") {
-    color = obtenirCouleur(valeur);
-  }
+  var styleGeometrie;
 
   //Cas où aucune statistique existe
   if (!statExiste){
-    var couleurDefaut = "#AAAAAA"; //Couleur du remplissage par défaut
-    var styleGeometrie = styleDefaut(couleurDefaut);
+    styleGeometrie = styleDefaut(couleur);
   }
-  //Cas où on affiche des cercles proportionnels
-  else if(mode == "cerclesProportionnels"){
-    styleGeometrie = styleCercles(color);
-  }
-  //Cas où on affiche des données colorisées
-  else{
-    styleGeometrie = styleCouleur(color);
+  else {
+    //Récupération de la couleur associée à la valeur (si elle est numérique)
+    if (!isNaN(valeur) && valeur != null && valeur != "") {
+      couleur = obtenirCouleur(valeur);
+    }
+    //Cas où on affiche des cercles proportionnels
+    if(choixMode.value == "cerclesProportionnels"){
+      styleGeometrie = styleCercles(couleur);
+    }
+    //Cas où on affiche des données colorisées
+    else{
+      styleGeometrie = styleCouleur(couleur);
+    }
   }
 
   return styleGeometrie;
@@ -798,7 +790,7 @@ Surbrillance de la carte
 function highlightFeature(e) {
   var layer = e.target;
 
-  if (mode == "cerclesProportionnels"){
+  if (choixMode.value == "cerclesProportionnels"){
     layer.setStyle({
       fillColor: '#3498db',
       weight: 3,
@@ -844,7 +836,7 @@ function onEachFeatureCercle(feature, layer, layerCercle) {
     mouseover: highlightFeature,
     mouseout: resetHighlight,
   });
-  if (mode == "cerclesProportionnels"){
+  if (choixMode.value == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercle);
   }
 }
@@ -918,7 +910,7 @@ function creerLegende() {
       labels = [];
 
   //Mise à jour de la légende si on choisit des cercles proportionnels
-  if (mode == "cerclesProportionnels" && statExiste){
+  if (choixMode.value == "cerclesProportionnels" && statExiste){
     div = remplirLegendeCercle(div);
   }
   //Mise à jour de la légende si on choisit de colorier les zones
@@ -1184,7 +1176,7 @@ function onLoad() {
 /*------------------------Appel aux différentes fonctions---------------------*/
 
 window.onload = onLoad;
-choixEchelle.addEventListener('click',onClickChoixEchelle);
+menuChoixEchelle.addEventListener('click',onClickChoixEchelle);
 mapFranceMetropolitaine.on('zoom',restreindreChoixEchelleSelonZoom);
 mapFranceMetropolitaine.on('zoom',afficherMiniMap)
 choixMode.addEventListener("change",majGeometrie);
@@ -1192,7 +1184,8 @@ choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
 
-document.getElementById('export').addEventListener('click', function(e) {
+
+document.getElementById('exportPng').addEventListener('click', function(e) {
   // html2canvas(document.getElementById('conteneurMaps')).then(function(canvas) {
   //     document.body.appendChild(canvas);
   // });
@@ -1204,4 +1197,10 @@ document.getElementById('export').addEventListener('click', function(e) {
   }).then(function(e) {
      console.log(e);
   });
+});
+
+document.getElementById('exportJson').addEventListener('click', function(e) {
+  var confJson = {};
+  confJson.choixEchelle = menuChoixEchelle.choixEchelle.value;
+  confJson.choixStat = choixStat.value;
 });
