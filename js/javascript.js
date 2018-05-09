@@ -55,6 +55,7 @@ var mapFranceMetropolitaine = L.map('mapFranceMetropolitaine', {
 	attributionControl: false,
 	zoomControl:false,
 	maxBounds:maxBoundsFranceMetropolitaine,
+  maxBoundsViscosity:1.0,
 	renderer: L.canvas()
 });
 
@@ -175,7 +176,6 @@ var menuChoixEchelle = document.getElementById("menuChoixEchelle");
 var choixMode = document.getElementById("choixMode");
 var choixPaletteCouleur = document.getElementById("choixPaletteCouleur");
 var choixStat = document.getElementById("choixStat");
-var menuChoixNombreClasses = document.getElementById("menuChoixNombreClasses");
 var nombreClasses = document.getElementById("nombreClasses");
 
 var layerMetropole; //Objet layer GeoJSON de la métropole affiché sur la carte
@@ -194,7 +194,6 @@ var layerCercleMayotte = L.layerGroup();
 
 var url = 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png' //Url du serveur de fonds de carte
 var topoJsonParEchelle = {}; //Tableau des TopoJSON par échelle
-var echelleGeometrieJson = "regions"; //Nom de l'échelle pour les fichiers de zones JSON
 var places; //Contiendra les géométries geoJSON de métropole issues du TopoJSON de l'échelle sélectionnée
 var placesDROM; //Même chose pour les DROM
 var grades = [];
@@ -204,6 +203,7 @@ var couleurCerclePositif;
 var maxAbsoluStats = NaN;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
+var cheminJsonStat;
 var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
 var geostatsObject = new geostats();
 var controlLegende = L.control({position: 'bottomleft'}); //Légende
@@ -225,11 +225,12 @@ function majGeometrie() {
 
   majEchelle();
 
+  var echelleGeometrieJson = echelleAffichee + "s";
   var json = topoJsonParEchelle[echelleGeometrieJson];
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
-  var promesse = majStats();
+  var promesse = majStats(cheminJsonStat);
   if (!promesse) {
     majLegende();
     ajouterGeojsonLayers();
@@ -245,9 +246,11 @@ function majGeometrie() {
 /*
 Fonction permettant de mettre à jour les données statistiques pour un objet JSON
 */
-function majStats(){
+function majStats(cheminFichier = null){
 
-  var cheminFichier = obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
+  if (cheminFichier == null) {
+    cheminFichier = obtenirCheminFichierJsonStats(); //Obtention du chemin du fichier
+  }
   valeursNumeriques = [];
   var promesse = null;
   if (cheminFichier != '') {
@@ -284,6 +287,7 @@ Si "cerclesProportionnels" est sélectionné, il devient impossible de choisir
 le nombre de classes.
 */
 function majMode(){
+  var menuChoixNombreClasses = document.getElementById("menuChoixNombreClasses");
   if (choixMode.value == "cerclesProportionnels"){
     nombreClasses.disabled = true;
     menuChoixNombreClasses.style.display = 'none';
@@ -318,15 +322,6 @@ function majNombreClasses(){
 Fonction permettant de choisir telle ou telle échelle (Région, département, commune)
 */
 function majEchelle() {
-  if (menuChoixEchelle.choixEchelle.value == "departement") {
-    echelleGeometrieJson = "departements";
-  }
-  else if (menuChoixEchelle.choixEchelle.value == "commune") {
-    echelleGeometrieJson = "communes";
-  }
-  else {
-    echelleGeometrieJson = "regions";
-  }
   //Mise à jour de l'échelle affichée
   echelleAffichee = menuChoixEchelle.choixEchelle.value;
 }
@@ -374,10 +369,10 @@ function restreindreChoixEchelleSelonZoom() {
 /*
 Fonction permettant de charger un fichier TopoJSON pour être décompressé.
 */
-function chargerDecompresserTopoJSON(scale) {
-  var filename = "./fonds_carte/json/" + scale + ".json.txt";
+function chargerDecompresserTopoJSON(echelle) {
+  var filename = "./fonds_carte/" + echelle + ".json.txt";
   var promesse = d3.text(filename).then(function(data) {
-    topoJsonParEchelle[scale] = JSON.parse(LZString.decompressFromUTF16(data));
+    topoJsonParEchelle[echelle] = JSON.parse(LZString.decompressFromUTF16(data));
   });
   return promesse;
 }
@@ -387,7 +382,8 @@ function chargerDecompresserTopoJSON(scale) {
 Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
-function chargerAfficherGeometriesOnLoad(){
+function chargerAfficherGeometriesOnLoad() {
+  var echelleGeometrieJson = menuChoixEchelle.choixEchelle.value + "s";
   chargerDecompresserTopoJSON(echelleGeometrieJson).then(majGeometrie);
   // Dans le cas d'une visualisation normale, on précharge les départements et les communes
   if (echelleGeometrieJson == "regions") {
@@ -485,7 +481,7 @@ Fonction pour créer une liste de fichiers stats disponibles
 */
 function obtenirListeFichiersStat(){
   //Interroge un fichier php pour obtenir la liste des fichiers du dossier stats
-  var promesse = d3.text("./fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
+  var promesse = d3.text("./fichiers_php/liste_fichiers_stats.txt").then(function(listeFichiers){
     //Liste des fichiers de statistique sous forme de liste
     listeFichiers = listeFichiers.split(";") ;
     var majListeFichiers = [];
@@ -683,9 +679,9 @@ function getCentroid(feature){
   var coord = feature.geometry.coordinates;
   var polygon = null;
   if (feature.geometry.type=="MultiPolygon"){
-    polygon = turf.multiPolygon(coord);
+    polygon = turf.helpers.multiPolygon(coord);
   }else{
-    polygon = turf.polygon(coord);
+    polygon = turf.helpers.polygon(coord);
   }
   var centro = turf.centroid(polygon).geometry.coordinates;
   var long = parseFloat(centro[0]);
@@ -1160,17 +1156,22 @@ function remplirChoixPaletteCouleur(){
 Fonction qui s'effectue au chargement de la page pour afficher des données
 */
 function onLoad() {
-  bloquerFonctionnalitesMapsOutreMer();
-  zoomSelonBounds();
-  ajouterFondsDeCartes(url);
-  chargerAfficherGeometriesOnLoad();
-  remplirListeStats();
-  remplirChoixPaletteCouleur();
-  majPaletteCouleur();
-  afficherEchelleGraphique();
-  afficherMiniMap();
-  afficherBoutonsZoomHome();
-  afficherCartouche(mapFranceMetropolitaine);
+  var promesse = chargerConfig();
+  promesse.then(function(presenceConfig) {
+    if (!presenceConfig) {
+      remplirListeStats();
+    }
+    bloquerFonctionnalitesMapsOutreMer();
+    zoomSelonBounds();
+    ajouterFondsDeCartes(url);
+    chargerAfficherGeometriesOnLoad();
+    remplirChoixPaletteCouleur();
+    majPaletteCouleur();
+    afficherEchelleGraphique();
+    afficherMiniMap();
+    afficherCartouche(mapFranceMetropolitaine);
+    afficherBoutonsZoomHome();
+  });
 }
 
 /*------------------------Appel aux différentes fonctions---------------------*/
@@ -1201,6 +1202,33 @@ document.getElementById('exportPng').addEventListener('click', function(e) {
 
 document.getElementById('exportJson').addEventListener('click', function(e) {
   var confJson = {};
-  confJson.choixEchelle = menuChoixEchelle.choixEchelle.value;
-  confJson.choixStat = choixStat.value;
+  confJson.echelle = menuChoixEchelle.choixEchelle.value;
+  confJson.mode = choixMode.value;
+  confJson.paletteCouleur = choixPaletteCouleur.value;
+  confJson.nombreClasses = nombreClasses.value;
+  confJson.fichierStat = obtenirCheminFichierJsonStats();
+  //Sauvegarder dans un fichier
+  d3.text("fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
+    console.log(reponse);
+  });
 });
+
+function chargerConfig() {
+  var promesse = d3.json("config.json").then(function(confJson) {
+    if ('echelle' in confJson) {
+      var echelle = document.getElementById(confJson.echelle);
+      echelle.checked = true;
+      choixMode.value = confJson.mode;
+      choixPaletteCouleur.value = confJson.paletteCouleur;
+      nombreClasses.value = parseInt(confJson.nombreClasses);
+      cheminJsonStat = confJson.fichierStat;
+      //TODO: gérer problème zoom :
+      //quand on sélectionne région, ne pas passer à départements automatiquement ! etc.
+      return true;
+    }
+    var divParam = document.getElementById("parametresPersonnalisation");
+    divParam.style.display = 'flex';
+    return false;
+  });
+  return promesse;
+}
