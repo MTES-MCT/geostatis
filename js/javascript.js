@@ -224,7 +224,7 @@ var statExiste = false;
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
 
 
-/*------------------------Gestion des mises à jour géométrie et stats---------------------------*/
+/*--------------Gestion des mises à jour géométrie et stats-------------------*/
 
 /*
 Fonction permettant le changement de couche géométrique
@@ -593,7 +593,7 @@ function obtenirArrayNumerique(array){
   var nouvelArray = [];
 
   for (var i=0;i<array.length;i++){
-    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
+    if (!isNaN(array[i]) && array[i]!= null){
       nouvelArray.push(array[i]);
     }
   }
@@ -716,7 +716,7 @@ function style(feature) {
   var valeur = feature.properties.stats; //Valeur statistique numérique liée à une zone
 
   //Récupération de la couleur associée à la valeur (si elle est numérique)
-  if (!isNaN(valeur) && valeur != null && valeur != "") {
+  if (!isNaN(valeur) && valeur != null) {
     color = obtenirCouleur(valeur);
   }
 
@@ -1105,7 +1105,7 @@ function afficherCartouche(mapObject) {
     var nomUnite = "";
     var nomTitre = "Pas de donnée";
 
-    if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
+    if (properties && !isNaN(properties.stats) && properties.stats != null){
       valeurStat = parseFloat(properties.stats);
       valeurStat = ecritureNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
     }
