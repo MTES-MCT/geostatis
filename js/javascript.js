@@ -978,6 +978,7 @@ des cercles proportionnels
 */
 function remplirLegendeCercle(div){
 
+  //Récupération des valeurs extrêmes
   var minValeursNumeriques = Math.min(...valeursNumeriques);
   var maxValeursNumeriques = Math.max(...valeursNumeriques);
 
@@ -986,13 +987,13 @@ function remplirLegendeCercle(div){
   var nomUnite = "Sans unité";
   var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
 
+  //Cas où l'unité de la statistique existe
   if (uniteStat != ""){
     nomUnite = uniteStat;
   }
 
+  //Definition de l'objet SVG text donnant l'unité
   var unite = "<text x='5' y='90' font-style = 'italic' fill='black'>Unité : " + nomUnite + "</text>"; //Nom de l'unité
-
-
 
   //Cas où il n'existe que des valeurs positives
   if (minValeursNumeriques >= 0){
@@ -1006,40 +1007,41 @@ function remplirLegendeCercle(div){
   }
   //Cas où il existe des valeurs positives et négatives
   else{
-    legendePositif = "<rect x='10' y='80' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='95' fill='black'>Positif</text>";
-    legendeNegatif = "<rect x='10' y='105' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='120' fill='black'>Négatif</text>";
+    legendePositif = "<rect x='10' y='80' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='50' y='95' fill='black'>Positif</text>";
+    legendeNegatif = "<rect x='10' y='105' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='50' y='120' fill='black'>Négatif</text>";
     if (uniteStat != ""){
       unite = "<text x='10' y='145' font-style = 'italic' fill='black'>Unité : " + nomUnite + "</text>"; //Nom de l'unité
     }
   }
 
-  var rayon1 = 10;
-  var rayon2 = 20;
-  var rayon3 = 30;
+  var rayonCercle1 = 10; //Rayon du plus petit cercle
+  var rayonCercle2 = 20; //Rayon du cercle moyen
+  var rayonCercle3 = 30; //Rayon du plus grand cercle
 
   //Ouverture de la balise SVG
   var legendeCercle = "<svg id='legendeSvg'>";
 
   //Ajout des cercles
-  var cercle3 = "<circle cx='30' cy='40' r="+ rayon3 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
-  var cercle2 = "<circle cx='30' cy='50' r="+ rayon2 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0' />";
-  var cercle1 = "<circle cx='30' cy='60' r="+ rayon1 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0' />";
+  var cercle3 = "<circle cx='35' cy='40' r="+ rayonCercle3 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
+  var cercle2 = "<circle cx='35' cy='50' r="+ rayonCercle2 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0' />";
+  var cercle1 = "<circle cx='35' cy='60' r="+ rayonCercle1 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0' />";
 
   //Ajout des lignes en pointillé
-  var ligne3 = "<line x1='30' y1='10' x2='65' y2='10' stroke='black' stroke-dasharray='3, 2' />";
-  var ligne2 = "<line x1='30' y1='30' x2='65' y2='30' stroke='black' stroke-dasharray='3, 2' />";
-  var ligne1 = "<line x1='30' y1='50' x2='65' y2='50' stroke='black' stroke-dasharray='3, 2' />";
+  var ligne3 = "<line x1='35' y1='10' x2='75' y2='10' stroke='black' stroke-dasharray='3, 2' />";
+  var ligne2 = "<line x1='35' y1='30' x2='75' y2='30' stroke='black' stroke-dasharray='3, 2' />";
+  var ligne1 = "<line x1='35' y1='50' x2='75' y2='50' stroke='black' stroke-dasharray='3, 2' />";
 
-  //Ajout des textes
-  var text3 = "<text id='text3' x='70' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayon3,maxAbsoluStats),1)) + "</text>";
-  var text2 = "<text id='text2' x='70' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayon2,maxAbsoluStats),1)) + "</text>";
-  var text1 = "<text id='text1' x='70' y='53.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayon1,maxAbsoluStats),1)) + "</text>";
+  //Ajout des textes, le nombre affiché a une précision décimale de 1
+  var text3 = "<text id='text3' x='75' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle3,maxAbsoluStats),1)) + "</text>";
+  var text2 = "<text id='text2' x='75' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle2,maxAbsoluStats),1)) + "</text>";
+  var text1 = "<text id='text1' x='75' y='53.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle1,maxAbsoluStats),1)) + "</text>";
 
   legendeCercle += cercle3 + cercle2 + cercle1 + ligne1 + ligne2 + ligne3 + text1 + text2 + text3 + unite + legendePositif + legendeNegatif;
 
   //Fermeture de la balise SVG
   legendeCercle += "</svg>";
 
+  //Écriture de l'objet SVG dans l'objet légende
   div.innerHTML = legendeCercle;
 
   return div;
@@ -1063,22 +1065,20 @@ function ecritureNumeriqueFrancaise(nombre){
 }
 
 /*
-Fonction pour mettre à jour la largeur de l'image SVG de la légende
-des cercles proportionnels pour optimiser l'affichage
+Fonction pour mettre à jour la largeur et la longeur de l'image SVG de la légende des cercles proportionnels pour optimiser l'affichage
 Ne peut être appelée qu'après ajout de cette image
 */
-function majLargeurSvg(){
+function majTailleSvg(){
   try {
     var legendeSvg = document.getElementById('legendeSvg');
     var bbox = legendeSvg.getBBox();
-    legendeSvg.style.width = (bbox.width + 10) + "px";
-    legendeSvg.style.height = (bbox.height + 5) + "px";
+    legendeSvg.style.width = (bbox.width + 5) + "px";
+    legendeSvg.style.height = (bbox.height) + "px";
   }
   catch(error) {
     //Ne rien faire
   }
 }
-
 
 /*
 Fonction permettant d'afficher la légende
@@ -1088,7 +1088,7 @@ function afficherLegende() {
     return creerLegende();
   };
   controlLegende.addTo(mapFranceMetropolitaine);
-  majLargeurSvg();
+  majTailleSvg(); //Mise à jour de la taille du SVG dans le cas des cercles proportionnels
 }
 
 /*
