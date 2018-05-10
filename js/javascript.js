@@ -223,6 +223,8 @@ var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FE
 Fonction permettant le changement de couche géométrique
 */
 function majGeometrie() {
+  // Affichage d'une roue de chargement
+  mapFranceMetropolitaine.spin(true);
 
   majEchelle();
 
@@ -446,6 +448,8 @@ function ajouterGeojsonLayers() {
     layerReunion.bringToFront();
     layerMayotte.bringToFront();
   }
+  // Fin du chargement
+  mapFranceMetropolitaine.spin(false);
 }
 
 
