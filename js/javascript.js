@@ -201,6 +201,7 @@ var colors;
 var couleurCercleNegatif;
 var couleurCerclePositif;
 var maxAbsoluStats = NaN;
+var listeFichiersJson = [];
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
 var cheminJsonStat; //Chemin du fichier de stat à charger si provient d'une config enregistrée
@@ -492,6 +493,7 @@ function obtenirListeFichiersStat(){
         majListeFichiers.push(listeFichiers[i]);
       }
     }
+    listeFichiersJson = majListeFichiers;
     return majListeFichiers;
   });
   return promesse;
@@ -548,7 +550,9 @@ function obtenirCheminFichierJsonStats(){
   if (choixStat.selectedIndex != "0") {
     var nomFichierStatsJson = choixStat.value;
     nomFichierStatsJson += "_" + menuChoixEchelle.choixEchelle.value + ".json";
-    statsJson = "./fichiers_stats/" + nomFichierStatsJson;
+    if (listeFichiersJson.includes(nomFichierStatsJson)) {
+      statsJson = "./fichiers_stats/" + nomFichierStatsJson;
+    }
   }
   return statsJson;
 }
@@ -1252,17 +1256,24 @@ function placesAvecBasePostGis(){
 Fonction permettant de créer un png à partir de la carte (encore en test)
 */
 function exporterPng() {
-  // html2canvas(document.getElementById('conteneurMaps')).then(function(canvas) {
-  //     document.body.appendChild(canvas);
-  // });
-  mapFranceMetropolitaine.export({
-    format:"image/png",
-    exclude:["#parametresPersonnalisation",".leaflet-control-zoomhome",".controlInfo",
-      ".leaflet-control-minimap"],
-    caption:{text:titreStat, position:[150,500], font:'16px Arial'}
-  }).then(function(e) {
-     console.log(e);
-  });
+  var node = document.getElementById('titresEtMaps');
+  var filteredClasses = ["leaflet-control-zoomhome", "controlInfo"];
+  function filter (node) {
+    var classes = [];
+    if (node.classList != undefined) {
+      classes = [...node.classList];
+    }
+    return (!filteredClasses.some(r=> classes.includes(r)));
+  }
+  domtoimage.toPng(node, {filter: filter})
+    .then(function (dataUrl) {
+        var img = new Image();
+        img.src = dataUrl;
+        document.body.appendChild(img);
+    })
+    .catch(function (error) {
+        console.error('Une erreur est survenue !', error);
+    });
 }
 document.getElementById('exportPng').addEventListener('click',exporterPng);
 

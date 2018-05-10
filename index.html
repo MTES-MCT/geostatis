@@ -8,8 +8,7 @@
 		<script src="https://unpkg.com/topojson-client@3"></script>
 		<script src="https://d3js.org/d3-format.v1.min.js"></script>
 		<script src="https://d3js.org/d3-fetch.v1.min.js"></script>
-		<script src="https://unpkg.com/html2canvas@0.5.0-beta4/dist/html2canvas.min.js"></script>
-		<script src="js/leaflet_export.js"></script>
+		<script src="js/dom-to-image.min.js"></script>
 		<script src="js/lz-string.min.js"></script>
 		<script src="js/leaflet.zoomhome.min.js"></script>
 		<script src="js/geostats.min.js"></script>
@@ -24,11 +23,11 @@
 	</head>
 
 	<body>
-		<div id="titres">
-			<div id="titrePrincipal">Création de cartes statistiques</div>
-			<div id="sousTitre"></div>
-		</div>
-		<div id="mapsEtParametresPersonnalisation">
+		<div id="titresEtMaps">
+			<div id="titres">
+				<div id="titrePrincipal">Création de cartes statistiques</div>
+				<div id="sousTitre"></div>
+			</div>
 
 			<div id="conteneurMaps">
 				<div id="mapFranceMetropolitaine"></div>
@@ -40,63 +39,63 @@
 					<div id="mapMayotte" class="mapDROM"></div>
 				</div>
 			</div>
+		</div>
 
-			<div id="parametresPersonnalisation" style="display:none;">
-				<form id="menuChoixEchelle" class="menuChoix">
-					<div class="titreMenu">Couche administrative</div>
-					<div id="choixRegion">
-						<input type="radio" id="region" name="choixEchelle" value="region" checked>
-						<label for="region">Régions</label>
-					</div>
-					<div id="choixDepartement">
-						<input type="radio" id="departement" name="choixEchelle" value="departement">
-						<label for="departement">Départements</label>
-					</div>
-					<div id="choixCommune">
-						<input type="radio" id="commune" name="choixEchelle" value="commune">
-						<label for="commune">Communes</label>
-					</div>
-				</form>
-
-				<div id="choixModePaletteCouleurNombreClasses">
-					<div id="menuChoixMode" class="menuChoix">
-						<div class="titreMenu">Mode</div>
-						<select id="choixMode" class="menuDeroulant">
-							<option selected value="intervallesEgaux">Intervalles égaux</option>
-							<option value="effectifsEgaux">Effectifs égaux</option>
-							<option value="ecartType">Écart-type</option>
-							<option value="rupturesNaturelles">Ruptures naturelles</option>
-							<option value="cerclesProportionnels">Cercles proportionnels</option>
-						</select>
-					</div>
-
-					<div id="menuChoixPaletteCouleur" class="menuChoix">
-						<div class="titreMenu">Échelle de couleur</div>
-						<select id="choixPaletteCouleur" class="menuDeroulant">
-						</select>
-					</div>
-
-					<div id="menuChoixNombreClasses" class="menuChoix">
-						<div class="titreMenu">Nombre de classes</div>
-						<input type="range" id="nombreClasses" class="slider" min=2 max=10 step=1>
-						<div id="afficheNombreClasses"></div>
-					</div>
+		<div id="parametresPersonnalisation" style="display:none;">
+			<form id="menuChoixEchelle" class="menuChoix">
+				<div class="titreMenu">Couche administrative</div>
+				<div id="choixRegion">
+					<input type="radio" id="region" name="choixEchelle" value="region" checked>
+					<label for="region">Régions</label>
 				</div>
+				<div id="choixDepartement">
+					<input type="radio" id="departement" name="choixEchelle" value="departement">
+					<label for="departement">Départements</label>
+				</div>
+				<div id="choixCommune">
+					<input type="radio" id="commune" name="choixEchelle" value="commune">
+					<label for="commune">Communes</label>
+				</div>
+			</form>
 
-				<div id="menuChoixStat" class="menuChoix">
-					<div class="titreMenu">Statistique</div>
-					<select id="choixStat" class="menuDeroulant">
-						<option>-------</option>
+			<div id="choixModePaletteCouleurNombreClasses">
+				<div id="menuChoixMode" class="menuChoix">
+					<div class="titreMenu">Mode</div>
+					<select id="choixMode" class="menuDeroulant">
+						<option selected value="intervallesEgaux">Intervalles égaux</option>
+						<option value="effectifsEgaux">Effectifs égaux</option>
+						<option value="ecartType">Écart-type</option>
+						<option value="rupturesNaturelles">Ruptures naturelles</option>
+						<option value="cerclesProportionnels">Cercles proportionnels</option>
 					</select>
 				</div>
-				
-				<div id="menuExport" class="menuChoix">
-					<div class="titreMenu">Export</div>
-					<button id="exportPng">PNG</button>
-					<button id="exportJson">Json</button>
+
+				<div id="menuChoixPaletteCouleur" class="menuChoix">
+					<div class="titreMenu">Échelle de couleur</div>
+					<select id="choixPaletteCouleur" class="menuDeroulant">
+					</select>
 				</div>
 
+				<div id="menuChoixNombreClasses" class="menuChoix">
+					<div class="titreMenu">Nombre de classes</div>
+					<input type="range" id="nombreClasses" class="slider" min=2 max=10 step=1>
+					<div id="afficheNombreClasses"></div>
+				</div>
 			</div>
+
+			<div id="menuChoixStat" class="menuChoix">
+				<div class="titreMenu">Statistique</div>
+				<select id="choixStat" class="menuDeroulant">
+					<option>-------</option>
+				</select>
+			</div>
+			
+			<div id="menuExport" class="menuChoix">
+				<div class="titreMenu">Export</div>
+				<button id="exportPng">PNG</button>
+				<button id="exportJson">Json</button>
+			</div>
+
 		</div>
 
 		<script src="js/javascript.js"></script>

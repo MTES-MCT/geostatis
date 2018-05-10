@@ -5,15 +5,20 @@ body{
   max-width: 800px;
 }
 
+#titresEtMaps{
+  display: flex;
+  flex-direction: column;
+}
+
 #titres{
   text-align: center;
   margin: auto;
-  padding: auto;
 }
 
 #titrePrincipal{
   font-size: 20px;
   height: 30px;
+  padding-top: 5px;
 }
 
 #sousTitre{
@@ -80,11 +85,6 @@ body{
   flex-wrap: wrap;
   justify-content: space-around;
   font-size: 15px;
-}
-
-#mapsEtParametresPersonnalisation{
-  display: flex;
-  flex-direction: column;
 }
 
 .titreMenu{
