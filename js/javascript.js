@@ -203,7 +203,7 @@ var couleurCerclePositif;
 var maxAbsoluStats = NaN;
 var uniteStat; //Unité associée à la statistique
 var titreStat; //Titre associé à la statistique
-var cheminJsonStat;
+var cheminJsonStat; //Chemin du fichier de stat à charger si provient d'une config enregistrée
 var valeursNumeriques = []; //Tableau des valeurs numériques de la stat
 var geostatsObject = new geostats();
 var controlLegende = L.control({position: 'bottomleft'}); //Légende
@@ -230,11 +230,10 @@ function majGeometrie() {
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
 
-  //Peut être dans majGeometrie()
+  //Chargement des géométries pour la zone affichée à partir d'une base PostGIS si disponible
   // if (mapFranceMetropolitaine.getZoom() >= 8 && choixEchelle.choixEchelle.value == "commune"){
   //   placesAvecBasePostGis();
   // }
-
 
   var promesse = majStats(cheminJsonStat);
   if (!promesse) {
@@ -358,8 +357,9 @@ function restreindreChoixEchelleSelonZoom() {
     /*
     On enlève la carte des régions si le niveau de zoom est supérieur à 8.
     On met celle des départements par défaut
+    Sauf si une config est enregistrée (cheminJsonStat renseigné)
     */
-    if (menuChoixEchelle.choixEchelle.value == "region") {
+    if (menuChoixEchelle.choixEchelle.value == "region" && !cheminJsonStat) {
       var departement = document.getElementById("departement");
       departement.checked = true;
       majGeometrie();
@@ -457,22 +457,17 @@ Si elles n'existent pas, on ne donne pas d'unité et le titre est "Création de 
 function recupererMetadonneesStats(statsMetadata = null){
 
   var sousTitreStat = "";
-
-  //Obtention de l'unité
-  try{
-    uniteStat = statsMetadata.unit_name;
-    if (uniteStat == undefined){
-      uniteStat = "";
-    }
-  }
-  catch(error) {
-    uniteStat = "";
-  }
+  uniteStat = "";
 
   if (statExiste){
     //Obtention du titre et suppression du sous-titre
     titreStat = statsMetadata.stat_name;
-  }else{
+    //Obtention de l'unité
+    if (statsMetadata.unit_name != undefined){
+      uniteStat = statsMetadata.unit_name;
+    }
+  }
+  else {
     titreStat = "Création de cartes statistiques";
     sousTitreStat = "Donnée non disponible à cette échelle";
   }
@@ -502,45 +497,45 @@ function obtenirListeFichiersStat(){
   return promesse;
 }
 
-var listeStats = [];
-var listeStatsEtTitres = [];
-var listeFichiersJson = [];
-
-/*
-Fonction pour lire chacun des fichiers stats de la liste pour récupérer leur titre
-*/
-function lireFichiersStatDeListe(i = 0){
-  //Lecture du titre de la statistique associée au fichier
-  var nouvellePromesse = d3.json("./fichiers_stats/" + listeFichiersJson[i]).then(function(stats) {
-    var titreStat = stats.metadata.stat_name;
-    //Cas où la statistique n'existe pas
-    if (!listeStats.includes(titreStat)){
-      listeStats.push(titreStat);
-      listeStatsEtTitres.push([listeFichiersJson[i].split('_')[0],titreStat]);
-    }
-    return i+1;
-  });
-  //Appel récursif jusqu'à ce que la liste soit entièrement parcourue
-  if (i < listeFichiersJson.length - 1) {
-    return nouvellePromesse.then(lireFichiersStatDeListe);
-  }
-}
-
 /*
 Fonction pour remplir la liste de stats sélectionnables
 */
 function remplirListeStats(){
+  // Appel à la fonction qui va lister les fichiers du dossier de stats
   var promesse = obtenirListeFichiersStat();
+
+  // Quand la liste est prête, on va récupérer les titres des stats etc
   promesse.then(function(listeFichiers) {
-    for (let i=0;i<listeFichiers.length;i++){
-      listeFichiersJson.push(listeFichiers[i]);
+
+    var listeStats = [];
+    var listeStatsEtTitres = [];
+
+    // Sous-fonction pour lire chacun des fichiers stats de la liste pour récupérer leur titre
+    function lireFichiersStatDeListe(i = 0){
+      //Lecture du titre de la statistique associée au fichier
+      var nouvellePromesse = d3.json("./fichiers_stats/" + listeFichiers[i]).then(function(stats) {
+        var titreStat = stats.metadata.stat_name;
+        //Cas où la statistique n'existe pas
+        if (!listeStats.includes(titreStat)){
+          listeStats.push(titreStat);
+          listeStatsEtTitres.push([listeFichiers[i].split('_')[0],titreStat]);
+        }
+        return i+1;
+      });
+      //Appel récursif jusqu'à ce que la liste soit entièrement parcourue
+      if (i < listeFichiers.length - 1) {
+        return nouvellePromesse.then(lireFichiersStatDeListe);
+      }
     }
+
+    // Appel à la sous-fonction, et quand c'est fini on remplit la liste de choix
     lireFichiersStatDeListe().then(function(){
       choixStat.innerHTML = "<option>-------</option>\n";
       for (var i=0; i<listeStats.length;i++){
-        choixStat.innerHTML += "<option value =" + i +">" + listeStatsEtTitres[i][1] + "</option>\n";
+        choixStat.innerHTML += "<option value =" + listeStatsEtTitres[i][0] +">" + listeStatsEtTitres[i][1] + "</option>\n";
       }
     });
+
   });
 }
 
@@ -548,22 +543,12 @@ function remplirListeStats(){
 Fonction permettant de récupérer le chemin du fichier voulu
 */
 function obtenirCheminFichierJsonStats(){
-  var statsJson = "./fichiers_stats/";
-  var nomFichierStatsJson;
-
-  try {
-    nomFichierStatsJson = listeStatsEtTitres[parseFloat(choixStat.value)][0];
+  var statsJson = "";
+  //Si une stat est sélectionnée dans la liste
+  if (choixStat.selectedIndex != "0") {
+    var nomFichierStatsJson = choixStat.value;
     nomFichierStatsJson += "_" + menuChoixEchelle.choixEchelle.value + ".json";
-
-    if (!listeFichiersJson.includes(nomFichierStatsJson)){
-      statsJson = "";
-    }
-    else{
-      statsJson += nomFichierStatsJson;
-    }
-  }
-  catch(error) {
-    statsJson = "";
+    statsJson = "./fichiers_stats/" + nomFichierStatsJson;
   }
   return statsJson;
 }
@@ -1053,7 +1038,7 @@ function ecritureNumeriqueFrancaise(nombre){
 }
 
 /*
-Fonction pour mettre à jour la largeur et la longeur de l'image SVG de la légende des cercles proportionnels pour optimiser l'affichage
+Fonction pour mettre à jour la largeur et la longueur de l'image SVG de la légende des cercles proportionnels pour optimiser l'affichage
 Ne peut être appelée qu'après ajout de cette image
 */
 function majTailleSvg(){
@@ -1072,7 +1057,7 @@ function majTailleSvg(){
 Fonction permettant d'afficher la légende
 */
 function afficherLegende() {
-  controlLegende.onAdd = function (map) {
+  controlLegende.onAdd = function(map) {
     return creerLegende();
   };
   controlLegende.addTo(mapFranceMetropolitaine);
@@ -1110,7 +1095,6 @@ function afficherCartouche(mapObject) {
     if (valeurStat != "Non connue"){
       nomUnite = uniteStat;
     }
-
     if (titreStat != undefined){
       nomTitre = titreStat;
     }
@@ -1159,10 +1143,7 @@ function afficherEchelleGraphique() {
 }
 
 /*
-Ajout d'une série de boutons avec 3 choix de zoom :
-- zoomer
-- dézoomer
-- retourner à la vue initiale (zoom à 5.5)
+Ajout d'une série de boutons avec 3 choix de zoom : zoomer/dézoomer/retourner à la vue initiale (zoom à 5.5)
 */
 function afficherBoutonsZoomHome(){
   var controlZoomHome = L.Control.zoomHome({homeZoom:5.5});
@@ -1170,8 +1151,7 @@ function afficherBoutonsZoomHome(){
 }
 
 /*
-Fonction permettant de faire la liste des palettes de couleurs disponibles dans
-le fichier HTML
+Fonction permettant de faire la liste des palettes de couleurs disponibles dans le fichier HTML
 */
 function remplirChoixPaletteCouleur(){
   choixPaletteCouleur.innerHTML = "";
@@ -1212,14 +1192,16 @@ window.onload = onLoad;
 menuChoixEchelle.addEventListener('click',onClickChoixEchelle);
 mapFranceMetropolitaine.on('zoom',restreindreChoixEchelleSelonZoom);
 mapFranceMetropolitaine.on('zoom',afficherMiniMap)
-choixMode.addEventListener("change",majGeometrie);
-choixPaletteCouleur.addEventListener("change",majGeometrie);
-nombreClasses.addEventListener("change",majGeometrie);
-choixStat.addEventListener("change",majGeometrie);
+choixMode.addEventListener('change',majGeometrie);
+choixPaletteCouleur.addEventListener('change',majGeometrie);
+nombreClasses.addEventListener('change',majGeometrie);
+choixStat.addEventListener('change',majGeometrie);
 
 /*------------------------------Fonctions extras------------------------------*/
 
-//Fonction permettant d'afficher seulement des communes de la bbox
+/*
+Fonction permettant d'afficher seulement des communes de la bbox
+*/
 function placesAvecBasePostGis(){
 
   //Définition des limites avec un pas pour se donner une marge (en degrés)
@@ -1266,8 +1248,10 @@ function placesAvecBasePostGis(){
 
 }
 
-//Fonction permettant de créer un png à partir de la carte (encore en test)
-document.getElementById('exportPng').addEventListener('click', function(e) {
+/*
+Fonction permettant de créer un png à partir de la carte (encore en test)
+*/
+function exporterPng() {
   // html2canvas(document.getElementById('conteneurMaps')).then(function(canvas) {
   //     document.body.appendChild(canvas);
   // });
@@ -1279,10 +1263,13 @@ document.getElementById('exportPng').addEventListener('click', function(e) {
   }).then(function(e) {
      console.log(e);
   });
-});
+}
+document.getElementById('exportPng').addEventListener('click',exporterPng);
 
-//Fonction permettant de sauvegarder la config de la carte
-document.getElementById('exportJson').addEventListener('click', function(e) {
+/*
+Fonction permettant de sauvegarder la config de la carte
+*/
+function sauverConfig() {
   var confJson = {};
   confJson.echelle = menuChoixEchelle.choixEchelle.value;
   confJson.mode = choixMode.value;
@@ -1291,13 +1278,18 @@ document.getElementById('exportJson').addEventListener('click', function(e) {
   confJson.fichierStat = obtenirCheminFichierJsonStats();
   //Sauvegarder dans un fichier
   d3.text("fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
+    //TODO: mieux gérer la réponse si erreur
     console.log(reponse);
   });
-});
+}
+document.getElementById('exportJson').addEventListener('click',sauverConfig);
 
-//Fonction permettant de charger une config
+/*
+Fonction permettant de charger une config
+*/
 function chargerConfig() {
   var promesse = d3.json("config.json").then(function(confJson) {
+    //Si la config est renseignée
     if ('echelle' in confJson) {
       var echelle = document.getElementById(confJson.echelle);
       echelle.checked = true;
@@ -1309,8 +1301,8 @@ function chargerConfig() {
       //quand on sélectionne région, ne pas passer à départements automatiquement ! etc.
       return true;
     }
-    var divParam = document.getElementById("parametresPersonnalisation");
-    divParam.style.display = 'flex';
+    var divParam = document.getElementById('parametresPersonnalisation');
+    divParam.style = '';
     return false;
   });
   return promesse;
