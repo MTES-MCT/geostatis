@@ -1208,9 +1208,9 @@ function sauverConfig() {
   confJson.mode = choixMode.value;
   confJson.paletteCouleur = choixPaletteCouleur.value;
   confJson.nombreClasses = nombreClasses.value;
-  confJson.fichierStat = obtenirCheminFichierJsonStats();
+  confJson.fichierStat = "." + obtenirCheminFichierJsonStats();
   //Sauvegarder dans un fichier
-  d3.text("fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
+  d3.text("./fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
     //TODO: mieux gérer la réponse si erreur
     console.log(reponse);
   });
@@ -1221,7 +1221,7 @@ document.getElementById('exportJson').addEventListener('click',sauverConfig);
 Fonction permettant de charger une config
 */
 function chargerConfig() {
-  var promesse = d3.json("config.json").then(function(confJson) {
+  var promesse = d3.json("./config.json").then(function(confJson) {
     //Si la config est renseignée
     if ('echelle' in confJson) {
       var echelle = document.getElementById(confJson.echelle);
