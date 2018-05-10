@@ -4,8 +4,8 @@
 
 /*Limites maximales de la carte de la France métropolitaine*/
 var maxBoundsFranceMetropolitaine = [
-    [37.1,-8.481], // Coordonnées limites du sud-ouest
-    [52.6,13.8]  // Coordonnées limites du nord-est
+    [38.135,-8.481], // Coordonnées limites du sud-ouest
+    [52.456,11.909]  // Coordonnées limites du nord-est
   ];
 
 /*Limites maximales de la carte de la Guadeloupe*/
@@ -47,16 +47,16 @@ Il est possible de zoomer avec un pas de 0.25
 On ne peut pas sortir de la France avec maxBounds
 */
 var mapFranceMetropolitaine = L.map('mapFranceMetropolitaine', {
-	center: [46.6033540, 1.8883335],
-	zoom: 5.5,
-	zoomSnap: 0.25,
-	minZoom:5.5,
-	maxZoom:15,
-	attributionControl: false,
-	zoomControl:false,
-	maxBounds:maxBoundsFranceMetropolitaine,
+  center: [46.6033540, 1.8883335],
+  zoom: 5.5,
+  zoomSnap: 0.25,
+  minZoom:5.5,
+  maxZoom:15,
+  attributionControl: false,
+  zoomControl:false,
+  maxBounds:maxBoundsFranceMetropolitaine,
   maxBoundsViscosity:1.0,
-	renderer: L.canvas()
+  renderer: L.canvas()
 });
 
 /*
@@ -216,7 +216,7 @@ var statExiste = false;
 var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
 
 
-/*------------------------Gestion des mises à jour géométrie et stats---------------------------*/
+/*--------------Gestion des mises à jour géométrie et stats-------------------*/
 
 /*
 Fonction permettant le changement de couche géométrique
@@ -229,6 +229,12 @@ function majGeometrie() {
   var json = topoJsonParEchelle[echelleGeometrieJson];
   places = topojson.feature(json, json.objects[echelleGeometrieJson]);
   placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
+
+  //Peut être dans majGeometrie()
+  // if (mapFranceMetropolitaine.getZoom() >= 8 && choixEchelle.choixEchelle.value == "commune"){
+  //   placesAvecBasePostGis();
+  // }
+
 
   var promesse = majStats(cheminJsonStat);
   if (!promesse) {
@@ -481,7 +487,7 @@ Fonction pour créer une liste de fichiers stats disponibles
 */
 function obtenirListeFichiersStat(){
   //Interroge un fichier php pour obtenir la liste des fichiers du dossier stats
-  var promesse = d3.text("./fichiers_php/liste_fichiers_stats.txt").then(function(listeFichiers){
+  var promesse = d3.text("./fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
     //Liste des fichiers de statistique sous forme de liste
     listeFichiers = listeFichiers.split(";") ;
     var majListeFichiers = [];
@@ -569,7 +575,7 @@ function obtenirArrayNumerique(array){
   var nouvelArray = [];
 
   for (var i=0;i<array.length;i++){
-    if (!isNaN(array[i]) && array[i]!="" && array[i]!= null){
+    if (!isNaN(array[i]) && array[i]!= null){
       nouvelArray.push(array[i]);
     }
   }
@@ -665,11 +671,16 @@ function obtenirCouleur(d) {
 Fonction permettant de calculer le rayon d'un cercle proportionnel à la valeur statistique
 */
 function setCircleSize(stat,max_stat){
-  if (isNaN(stat)==true){
-    return 0
-  }else{
-    return Math.sqrt(Math.abs(stat))*(20/Math.sqrt(max_stat));
-  }
+  var rayon_max = 30;
+  return Math.sqrt(Math.abs(stat))*rayon_max/Math.sqrt(max_stat);
+}
+
+/*
+Fonction permettant de calculer la valeur statistique à partir du rayon d'un cercle proportionnel
+*/
+function obtStatCercle(rayon,max_stat){
+  var rayon_max = 30;
+  return rayon**2/rayon_max**2*max_stat;
 }
 
 /*
@@ -703,7 +714,7 @@ function style(feature) {
   }
   else {
     //Récupération de la couleur associée à la valeur (si elle est numérique)
-    if (!isNaN(valeur) && valeur != null && valeur != "") {
+    if (!isNaN(valeur) && valeur != null) {
       couleur = obtenirCouleur(valeur);
     }
     //Cas où on affiche des cercles proportionnels
@@ -870,23 +881,24 @@ Fonction créant un cercle proportionnel dans layerCercle
 function creerCercle(feature, layer, layerC){
   var stat = feature.properties["stats"];
   var centroid = getCentroid(feature);
-
-  //Définition de la couleur du cercle en fonction de sa valeur
-  var couleurCercle = '#000000';
-  if (stat >= 0){
-    couleurCercle = couleurCerclePositif;
+  if (stat != undefined){
+    //Définition de la couleur du cercle en fonction de sa valeur
+    var couleurCercle = '#000000';
+    if (stat >= 0){
+      couleurCercle = couleurCerclePositif;
+    }
+    else if (stat < 0) {
+      couleurCercle = couleurCercleNegatif;
+    }
+    var marqueurCercle = L.circleMarker(centroid, {
+      radius: setCircleSize(stat, maxAbsoluStats),
+      weight: 0.1,
+      color: '#000000',
+      opacity: 1.0,
+      fillOpacity: 0.6,
+      fillColor: couleurCercle
+    }).addTo(layerC);
   }
-  else if (stat < 0) {
-    couleurCercle = couleurCercleNegatif;
-  }
-  var marqueurCercle = L.circleMarker(centroid, {
-    radius: setCircleSize(stat, maxAbsoluStats),
-    weight: 0.1,
-    color: '#000000',
-    opacity: 1.0,
-    fillOpacity: 0.6,
-    fillColor: couleurCercle
-  }).addTo(layerC);
 }
 
 /*--------------------Création et ajout des différents éléments de contrôle et d'habillage---------------------*/
@@ -940,6 +952,11 @@ function remplirLegendeCouleur(div){
         borneInf + ' &ndash; ' + borneSup + '<br>';
   }
 
+  //Ajout de l'unité si elle existe
+  if (uniteStat != ""){
+    div.innerHTML += "<i style='font-style:italic;color:black;'>Unité&nbsp;:" + uniteStat.replace(" ", "&nbsp;") + "</i><br>";
+  }
+
   return div;
 }
 
@@ -949,13 +966,22 @@ des cercles proportionnels
 */
 function remplirLegendeCercle(div){
 
+  //Récupération des valeurs extrêmes
   var minValeursNumeriques = Math.min(...valeursNumeriques);
   var maxValeursNumeriques = Math.max(...valeursNumeriques);
 
   var legendePositif = "";
   var legendeNegatif = "";
-  var hauteurSvg = "52px";
+  var nomUnite = "Sans unité";
   var couleurCercleLegende = "#AAAAAA"; //Cercle est gris
+
+  //Cas où l'unité de la statistique existe
+  if (uniteStat != ""){
+    nomUnite = uniteStat;
+  }
+
+  //Definition de l'objet SVG text donnant l'unité
+  var unite = "<text x='5' y='90' font-style = 'italic' fill='black'>Unité : " + nomUnite + "</text>"; //Nom de l'unité
 
   //Cas où il n'existe que des valeurs positives
   if (minValeursNumeriques >= 0){
@@ -969,34 +995,41 @@ function remplirLegendeCercle(div){
   }
   //Cas où il existe des valeurs positives et négatives
   else{
-    legendePositif = "<rect x='10' y='60' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='45' y='75' fill='black'>Positif</text>";
-    legendeNegatif = "<rect x='10' y='85' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='45' y='100' fill='black'>Négatif</text>";
-    hauteurSvg = "107px";
+    legendePositif = "<rect x='10' y='80' width='30' height='20' fill='" + couleurCerclePositif +"'/>" + "<text x='50' y='95' fill='black'>Positif</text>";
+    legendeNegatif = "<rect x='10' y='105' width='30' height='20' fill='" + couleurCercleNegatif +"'/>" + "<text x='50' y='120' fill='black'>Négatif</text>";
+    if (uniteStat != ""){
+      unite = "<text x='10' y='145' font-style = 'italic' fill='black'>Unité : " + nomUnite + "</text>"; //Nom de l'unité
+    }
   }
 
-  var r2=10
-  var v2=(r2/20*Math.sqrt(maxAbsoluStats))**2
+  var rayonCercle1 = 10; //Rayon du plus petit cercle
+  var rayonCercle2 = 20; //Rayon du cercle moyen
+  var rayonCercle3 = 30; //Rayon du plus grand cercle
 
   //Ouverture de la balise SVG
-  var legendeCercle = "<svg id='legendeSvg' height='" + hauteurSvg + "'>";
+  var legendeCercle = "<svg id='legendeSvg'>";
 
   //Ajout des cercles
-  var cercle1 = "<circle cx='25' cy='30' r='20' stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
-  var cercle2 = "<circle cx='25' cy='40' r=" + r2.toString() + " stroke='black' stroke-width='1' stroke-opacity='1' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
+  var cercle3 = "<circle cx='35' cy='40' r="+ rayonCercle3 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0.6' />";
+  var cercle2 = "<circle cx='35' cy='50' r="+ rayonCercle2 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0' />";
+  var cercle1 = "<circle cx='35' cy='60' r="+ rayonCercle1 +" stroke='black' stroke-width='0.5' stroke-opacity='0.8' fill=" + couleurCercleLegende + " fill-opacity='0' />";
 
   //Ajout des lignes en pointillé
-  var ligne1 = "<line x1='25' y1='10' x2='60' y2='10' stroke='black' stroke-dasharray='3, 2' />"
-  var ligne2 = "<line x1='25' y1='30' x2='60' y2='30' stroke='black' stroke-dasharray='3, 2' />"
+  var ligne3 = "<line x1='35' y1='10' x2='75' y2='10' stroke='black' stroke-dasharray='3, 2' />";
+  var ligne2 = "<line x1='35' y1='30' x2='75' y2='30' stroke='black' stroke-dasharray='3, 2' />";
+  var ligne1 = "<line x1='35' y1='50' x2='75' y2='50' stroke='black' stroke-dasharray='3, 2' />";
 
-  //Ajout des textes
-  var text1 = "<text id='text1' x='65' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(maxAbsoluStats) + "</text>";
-  var text2 = "<text id='text2' x='65' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(v2) + "</text>";
+  //Ajout des textes, le nombre affiché a une précision décimale de 1
+  var text3 = "<text id='text3' x='75' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle3,maxAbsoluStats),1)) + "</text>";
+  var text2 = "<text id='text2' x='75' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle2,maxAbsoluStats),1)) + "</text>";
+  var text1 = "<text id='text1' x='75' y='53.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle1,maxAbsoluStats),1)) + "</text>";
 
-  legendeCercle += cercle1 + cercle2 + ligne1 + ligne2 + text1 + text2 + legendePositif + legendeNegatif;
+  legendeCercle += cercle3 + cercle2 + cercle1 + ligne1 + ligne2 + ligne3 + text1 + text2 + text3 + unite + legendePositif + legendeNegatif;
 
   //Fermeture de la balise SVG
   legendeCercle += "</svg>";
 
+  //Écriture de l'objet SVG dans l'objet légende
   div.innerHTML = legendeCercle;
 
   return div;
@@ -1009,7 +1042,7 @@ conventions françaises.
 function ecritureScientifique(nombre){
   var nouveauNombre = d3.format(".4")(nombre).replace(/e/g, "x10<sup>") + "</sup>";
 
-  return nouveauNombre.replace(/,/g, " ").replace(".", ",");
+  return nouveauNombre.replace(/,/g, " ").replace(".", ",").replace("+", "");
 }
 
 /*
@@ -1020,21 +1053,20 @@ function ecritureNumeriqueFrancaise(nombre){
 }
 
 /*
-Fonction pour mettre à jour la largeur de l'image SVG de la légende
-des cercles proportionnels pour optimiser l'affichage
+Fonction pour mettre à jour la largeur et la longeur de l'image SVG de la légende des cercles proportionnels pour optimiser l'affichage
 Ne peut être appelée qu'après ajout de cette image
 */
-function majLargeurSvg(){
+function majTailleSvg(){
   try {
     var legendeSvg = document.getElementById('legendeSvg');
     var bbox = legendeSvg.getBBox();
-    legendeSvg.style.width = (bbox.width + 10) + "px";
+    legendeSvg.style.width = (bbox.width + 5) + "px";
+    legendeSvg.style.height = (bbox.height) + "px";
   }
   catch(error) {
     //Ne rien faire
   }
 }
-
 
 /*
 Fonction permettant d'afficher la légende
@@ -1044,7 +1076,7 @@ function afficherLegende() {
     return creerLegende();
   };
   controlLegende.addTo(mapFranceMetropolitaine);
-  majLargeurSvg();
+  majTailleSvg(); //Mise à jour de la taille du SVG dans le cas des cercles proportionnels
 }
 
 /*
@@ -1071,7 +1103,7 @@ function afficherCartouche(mapObject) {
     var nomUnite = "";
     var nomTitre = "Pas de donnée";
 
-    if (properties && !isNaN(properties.stats) && properties.stats != null && properties.stats != ""){
+    if (properties && !isNaN(properties.stats) && properties.stats != null){
       valeurStat = parseFloat(properties.stats);
       valeurStat = ecritureNumeriqueFrancaise(valeurStat); //Mise en syntaxe française de la valeur numérique
     }
@@ -1169,8 +1201,8 @@ function onLoad() {
     majPaletteCouleur();
     afficherEchelleGraphique();
     afficherMiniMap();
-    afficherCartouche(mapFranceMetropolitaine);
     afficherBoutonsZoomHome();
+    afficherCartouche(mapFranceMetropolitaine);
   });
 }
 
@@ -1185,7 +1217,56 @@ choixPaletteCouleur.addEventListener("change",majGeometrie);
 nombreClasses.addEventListener("change",majGeometrie);
 choixStat.addEventListener("change",majGeometrie);
 
+/*------------------------------Fonctions extras------------------------------*/
 
+//Fonction permettant d'afficher seulement des communes de la bbox
+function placesAvecBasePostGis(){
+
+  //Définition des limites avec un pas pour se donner une marge (en degrés)
+  var bounds = mapFranceMetropolitaine.getBounds();
+  var pas = 0; //Marge (en degrés) donnée pour la bbox
+  var xmin = bounds.getEast() - pas;
+  var xmax = bounds.getWest() + pas;
+  var ymin = bounds.getSouth() - pas;
+  var ymax = bounds.getNorth() + pas;
+
+  //Écriture de la requete à envoyer au fichier php qui renverra un geojson
+  var data = "xmin=" + xmin;
+  data += "&xmax=" + xmax;
+  data += "&ymin=" + ymin;
+  data += "&ymax=" + ymax;
+
+  //Initialisation de la variable AJAX
+  var ajaxPostGis = new XMLHttpRequest();
+
+  //Destination et type de la requête AJAX (asynchrone)
+  ajaxPostGis.open('POST', './fichiers_php/connecter_base_postgis.php', false);
+
+  //Métadonnées de la requête AJAX
+  ajaxPostGis.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+  //Événement de changement d'état de la requête
+  ajaxPostGis.addEventListener('readystatechange',  function(e) {
+      //Si l'état est le numéro 4 et que la ressource est trouvée
+      if(ajaxPostGis.readyState == 4 && ajaxPostGis.status == 200) {
+
+        //Retour de la requete (soit 'erreur' soit un geojson)
+        var resultat = ajaxPostGis.responseText;
+
+        //Cas où il n'y a pas d'erreur
+        if (resultat!= "erreur"){
+          //Mise à jour de la géométrie
+          places = JSON.parse(ajaxPostGis.responseText);
+        }
+
+      }})
+
+  //Envoi de la requête à connecter_base_postgis.php
+  ajaxPostGis.send(data);
+
+}
+
+//Fonction permettant de créer un png à partir de la carte (encore en test)
 document.getElementById('exportPng').addEventListener('click', function(e) {
   // html2canvas(document.getElementById('conteneurMaps')).then(function(canvas) {
   //     document.body.appendChild(canvas);
@@ -1200,6 +1281,7 @@ document.getElementById('exportPng').addEventListener('click', function(e) {
   });
 });
 
+//Fonction permettant de sauvegarder la config de la carte
 document.getElementById('exportJson').addEventListener('click', function(e) {
   var confJson = {};
   confJson.echelle = menuChoixEchelle.choixEchelle.value;
@@ -1213,6 +1295,7 @@ document.getElementById('exportJson').addEventListener('click', function(e) {
   });
 });
 
+//Fonction permettant de charger une config
 function chargerConfig() {
   var promesse = d3.json("config.json").then(function(confJson) {
     if ('echelle' in confJson) {
@@ -1232,3 +1315,4 @@ function chargerConfig() {
   });
   return promesse;
 }
+
