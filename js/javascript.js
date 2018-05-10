@@ -1255,7 +1255,7 @@ function placesAvecBasePostGis(){
 /*
 Fonction permettant de créer un png à partir de la carte (encore en test)
 */
-function exporterPng() {
+function exporterImage(format) {
   var node = document.getElementById('titresEtMaps');
   var filteredClasses = ["leaflet-control-zoomhome", "controlInfo"];
   function filter (node) {
@@ -1265,17 +1265,23 @@ function exporterPng() {
     }
     return (!filteredClasses.some(r=> classes.includes(r)));
   }
-  domtoimage.toPng(node, {filter: filter})
-    .then(function (dataUrl) {
-        var img = new Image();
-        img.src = dataUrl;
-        document.body.appendChild(img);
-    })
-    .catch(function (error) {
-        console.error('Une erreur est survenue !', error);
-    });
+  var promesse;
+  if (format == 'png') {
+    promesse = domtoimage.toPng(node, {filter: filter});
+  } else {
+    promesse = domtoimage.toSvg(node, {filter: filter});
+  }
+  promesse.then(function (dataUrl) {
+    var img = new Image();
+    img.src = dataUrl;
+    document.body.appendChild(img);
+  })
+  .catch(function (error) {
+    console.error('Une erreur est survenue !', error);
+  });
 }
-document.getElementById('exportPng').addEventListener('click',exporterPng);
+document.getElementById('exportPng').addEventListener('click', function(e) {exporterImage('png')});
+document.getElementById('exportSvg').addEventListener('click', function(e) {exporterImage('svg')});
 
 /*
 Fonction permettant de sauvegarder la config de la carte
