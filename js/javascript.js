@@ -1165,6 +1165,80 @@ function remplirChoixPaletteCouleur(){
   }
 }
 
+/*-----------------------Gestion des exports d'images et configs-------------------------*/
+
+/*
+Fonction permettant de créer une image (png ou svg) à partir de la carte
+*/
+function exporterImage(format) {
+  var node = document.getElementById('titresEtMaps');
+  var filteredClasses = ["leaflet-control-zoomhome", "controlInfo"];
+  function filter (node) {
+    var classes = [];
+    if (node.classList != undefined) {
+      classes = [...node.classList];
+    }
+    return (!filteredClasses.some(r=> classes.includes(r)));
+  }
+  var promesse;
+  if (format == 'png') {
+    promesse = domtoimage.toPng(node, {filter: filter});
+  } else {
+    promesse = domtoimage.toSvg(node, {filter: filter});
+  }
+  promesse.then(function (dataUrl) {
+    var img = new Image();
+    img.src = dataUrl;
+    document.body.appendChild(img);
+  })
+  .catch(function (error) {
+    console.error('Une erreur est survenue !', error);
+  });
+}
+document.getElementById('exportPng').addEventListener('click', function(e) {exporterImage('png')});
+document.getElementById('exportSvg').addEventListener('click', function(e) {exporterImage('svg')});
+
+/*
+Fonction permettant de sauvegarder la config de la carte
+*/
+function sauverConfig() {
+  var confJson = {};
+  confJson.echelle = menuChoixEchelle.choixEchelle.value;
+  confJson.mode = choixMode.value;
+  confJson.paletteCouleur = choixPaletteCouleur.value;
+  confJson.nombreClasses = nombreClasses.value;
+  confJson.fichierStat = obtenirCheminFichierJsonStats();
+  //Sauvegarder dans un fichier
+  d3.text("fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
+    //TODO: mieux gérer la réponse si erreur
+    console.log(reponse);
+  });
+}
+document.getElementById('exportJson').addEventListener('click',sauverConfig);
+
+/*
+Fonction permettant de charger une config
+*/
+function chargerConfig() {
+  var promesse = d3.json("config.json").then(function(confJson) {
+    //Si la config est renseignée
+    if ('echelle' in confJson) {
+      var echelle = document.getElementById(confJson.echelle);
+      echelle.checked = true;
+      choixMode.value = confJson.mode;
+      choixPaletteCouleur.value = confJson.paletteCouleur;
+      nombreClasses.value = parseInt(confJson.nombreClasses);
+      cheminJsonStat = confJson.fichierStat;
+      //TODO: gérer problème zoom :
+      //quand on sélectionne région, ne pas passer à départements automatiquement ! etc.
+      return true;
+    }
+    var divParam = document.getElementById('parametresPersonnalisation');
+    divParam.style = '';
+    return false;
+  });
+  return promesse;
+}
 
 /*-----------------------Initialisation de la carte-------------------------*/
 
@@ -1251,77 +1325,3 @@ function placesAvecBasePostGis(){
   ajaxPostGis.send(data);
 
 }
-
-/*
-Fonction permettant de créer un png à partir de la carte (encore en test)
-*/
-function exporterImage(format) {
-  var node = document.getElementById('titresEtMaps');
-  var filteredClasses = ["leaflet-control-zoomhome", "controlInfo"];
-  function filter (node) {
-    var classes = [];
-    if (node.classList != undefined) {
-      classes = [...node.classList];
-    }
-    return (!filteredClasses.some(r=> classes.includes(r)));
-  }
-  var promesse;
-  if (format == 'png') {
-    promesse = domtoimage.toPng(node, {filter: filter});
-  } else {
-    promesse = domtoimage.toSvg(node, {filter: filter});
-  }
-  promesse.then(function (dataUrl) {
-    var img = new Image();
-    img.src = dataUrl;
-    document.body.appendChild(img);
-  })
-  .catch(function (error) {
-    console.error('Une erreur est survenue !', error);
-  });
-}
-document.getElementById('exportPng').addEventListener('click', function(e) {exporterImage('png')});
-document.getElementById('exportSvg').addEventListener('click', function(e) {exporterImage('svg')});
-
-/*
-Fonction permettant de sauvegarder la config de la carte
-*/
-function sauverConfig() {
-  var confJson = {};
-  confJson.echelle = menuChoixEchelle.choixEchelle.value;
-  confJson.mode = choixMode.value;
-  confJson.paletteCouleur = choixPaletteCouleur.value;
-  confJson.nombreClasses = nombreClasses.value;
-  confJson.fichierStat = obtenirCheminFichierJsonStats();
-  //Sauvegarder dans un fichier
-  d3.text("fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
-    //TODO: mieux gérer la réponse si erreur
-    console.log(reponse);
-  });
-}
-document.getElementById('exportJson').addEventListener('click',sauverConfig);
-
-/*
-Fonction permettant de charger une config
-*/
-function chargerConfig() {
-  var promesse = d3.json("config.json").then(function(confJson) {
-    //Si la config est renseignée
-    if ('echelle' in confJson) {
-      var echelle = document.getElementById(confJson.echelle);
-      echelle.checked = true;
-      choixMode.value = confJson.mode;
-      choixPaletteCouleur.value = confJson.paletteCouleur;
-      nombreClasses.value = parseInt(confJson.nombreClasses);
-      cheminJsonStat = confJson.fichierStat;
-      //TODO: gérer problème zoom :
-      //quand on sélectionne région, ne pas passer à départements automatiquement ! etc.
-      return true;
-    }
-    var divParam = document.getElementById('parametresPersonnalisation');
-    divParam.style = '';
-    return false;
-  });
-  return promesse;
-}
-
