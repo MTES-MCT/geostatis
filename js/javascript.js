@@ -228,10 +228,9 @@ function majGeometrie() {
 
   majEchelle();
 
-  var echelleGeometrieJson = echelleAffichee + "s";
-  var json = topoJsonParEchelle[echelleGeometrieJson];
-  places = topojson.feature(json, json.objects[echelleGeometrieJson]);
-  placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
+  var json = topoJsonParEchelle[echelleAffichee];
+  places = topojson.feature(json, json.objects[echelleAffichee]);
+  placesDROM = topojson.feature(json, json.objects[echelleAffichee + "DROM"]);
 
   //Chargement des géométries pour la zone affichée à partir d'une base PostGIS si disponible
   // if (mapFranceMetropolitaine.getZoom() >= 8 && choixEchelle.choixEchelle.value == "commune"){
@@ -392,11 +391,13 @@ Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
 function chargerAfficherGeometriesOnLoad() {
-  var echelleGeometrieJson = menuChoixEchelle.choixEchelle.value + "s";
+  var echelleGeometrieJson = menuChoixEchelle.choixEchelle.value;
   chargerDecompresserTopoJSON(echelleGeometrieJson).then(majGeometrie);
   // Dans le cas d'une visualisation normale, on précharge les départements et les communes
-  if (echelleGeometrieJson == "regions") {
-    chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+  if (echelleGeometrieJson == "region") {
+    chargerDecompresserTopoJSON("departement")
+    .then(chargerDecompresserTopoJSON("epci"))
+    .then(chargerDecompresserTopoJSON("commune"));
   }
 }
 
