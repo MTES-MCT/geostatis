@@ -43,7 +43,7 @@ function csv_process(csv_string){
           scale="departement";
         };
         if (line[1].substring(0,5)=="inter"){
-          scale="EPCI";
+          scale="epci";
         };
         if (line[1].substring(0,7)=="commune"){
           scale="commune";
@@ -76,9 +76,9 @@ function handleFileSelect(evt) {
     reader.onload = function(){
       var csv_string = reader.result;
       var json= csv_process(csv_string);
-      scale=json.metadata["scale"];
       json_name=json_name.concat(scale);
       json_name=json_name.concat(".json");
+      console.log(json_name);
       var json_str = JSON.stringify(json, null, '');
       console.log(json_str);
 

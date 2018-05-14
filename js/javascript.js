@@ -326,7 +326,7 @@ function majNombreClasses(){
 }
 
 /*
-Fonction permettant de choisir telle ou telle échelle (Région, département, commune)
+Fonction permettant de choisir telle ou telle échelle (Région, département, epci, commune)
 */
 function majEchelle() {
   //Mise à jour de l'échelle affichée
@@ -334,7 +334,7 @@ function majEchelle() {
 }
 
 /*
-Fonction permettant de changer d'échelle (région, département, commune) seulement
+Fonction permettant de changer d'échelle (région, département, epci, commune) seulement
 lorsque l'utilisateur change et non lorsqu'il clique une nouvelle fois sur la
 même échelle.
 */
@@ -393,7 +393,7 @@ liées au TopoJSON
 function chargerAfficherGeometriesOnLoad() {
   var echelleGeometrieJson = menuChoixEchelle.choixEchelle.value;
   chargerDecompresserTopoJSON(echelleGeometrieJson).then(majGeometrie);
-  // Dans le cas d'une visualisation normale, on précharge les départements et les communes
+  // Dans le cas d'une visualisation normale, on précharge les départements, epci et communes
   if (echelleGeometrieJson == "region") {
     chargerDecompresserTopoJSON("departement")
     .then(chargerDecompresserTopoJSON("epci"))
@@ -734,8 +734,8 @@ function styleCercles(color){
   //Opacité de la frontère par défaut
   var opacite = 1;
 
-  //Si la couche est la commune, la frontière devient invisible
-  if (echelleAffichee == 'commune'){
+  //Si la couche est la commune ou l'epci, la frontière devient invisible
+  if (echelleAffichee == 'commune' || echelleAffichee == 'epci'){
     opacite = 0;
   }
 
@@ -771,8 +771,8 @@ function styleCouleur(color){
   //Couleur de la Frontière par défaut
   var couleurFrontiere = 'white';
 
-  //Si la couche est la commune, la frontière prend la même couleur que le remplissage
-  if (echelleAffichee == 'commune'){
+  //Si la couche est la commune ou l'epci, la frontière prend la même couleur que le remplissage
+  if (echelleAffichee == 'commune' || echelleAffichee == 'epci'){
     couleurFrontiere = color;
   }
 
