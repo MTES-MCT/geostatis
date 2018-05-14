@@ -214,7 +214,7 @@ var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 var statExiste = false;
 
-var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
+var listePalettesCouleur = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
 
 
 /*--------------Gestion des mises à jour géométrie et stats-------------------*/
@@ -306,13 +306,13 @@ function majMode(){
 }
 
 /*
-Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
+Fonction pour permettre de mettre à jour la palette de couleur sélectionnée
 */
 function majPaletteCouleur(){
   var i = choixPaletteCouleur.value;
-  couleurs = colorPalettes[i].couleurs;
-  couleurCerclePositif = colorPalettes[i].couleurCerclePositif;
-  couleurCercleNegatif = colorPalettes[i].couleurCercleNegatif;
+  couleurs = listePalettesCouleur[i].couleurs;
+  couleurCerclePositif = listePalettesCouleur[i].couleurCerclePositif;
+  couleurCercleNegatif = listePalettesCouleur[i].couleurCercleNegatif;
 }
 
 /*
@@ -654,7 +654,7 @@ function obtenirCouleur(d) {
     return '#AAAAAA'; //Couleur grise
   }
 
-  for (var i = 0; i < grades.length-1; i++) {
+  for (let i = 0; i < grades.length-1; i++) {
     if (d >= grades[i] && d < grades[i+1]){
       return couleurs[i];
     }
@@ -1168,8 +1168,8 @@ Fonction permettant de faire la liste des palettes de couleurs disponibles dans 
 function remplirChoixPaletteCouleur(){
   choixPaletteCouleur.innerHTML = "";
 
-  for (var i=0;i<Object.keys(colorPalettes).length;i++){
-    choixPaletteCouleur.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
+  for (var i=0;i<Object.keys(listePalettesCouleur).length;i++){
+    choixPaletteCouleur.innerHTML += "<option value =" + i +">" + listePalettesCouleur[i].nom + "</option>\n"
   }
 }
 
