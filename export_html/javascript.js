@@ -197,7 +197,7 @@ var topoJsonParEchelle = {}; //Tableau des TopoJSON par échelle
 var places; //Contiendra les géométries geoJSON de métropole issues du TopoJSON de l'échelle sélectionnée
 var placesDROM; //Même chose pour les DROM
 var grades = [];
-var colors;
+var couleurs;
 var couleurCercleNegatif;
 var couleurCerclePositif;
 var maxAbsoluStats = NaN;
@@ -214,7 +214,7 @@ var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 var statExiste = false;
 
-var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
+var listePalettesCouleur = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
 
 
 /*--------------Gestion des mises à jour géométrie et stats-------------------*/
@@ -223,13 +223,14 @@ var colorPalettes = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FE
 Fonction permettant le changement de couche géométrique
 */
 function majGeometrie() {
+  // Affichage d'une roue de chargement
+  mapFranceMetropolitaine.spin(true);
 
   majEchelle();
 
-  var echelleGeometrieJson = echelleAffichee + "s";
-  var json = topoJsonParEchelle[echelleGeometrieJson];
-  places = topojson.feature(json, json.objects[echelleGeometrieJson]);
-  placesDROM = topojson.feature(json, json.objects[echelleGeometrieJson + "DROM"]);
+  var json = topoJsonParEchelle[echelleAffichee];
+  places = topojson.feature(json, json.objects[echelleAffichee]);
+  placesDROM = topojson.feature(json, json.objects[echelleAffichee + "DROM"]);
 
   //Chargement des géométries pour la zone affichée à partir d'une base PostGIS si disponible
   // if (mapFranceMetropolitaine.getZoom() >= 8 && choixEchelle.choixEchelle.value == "commune"){
@@ -305,13 +306,13 @@ function majMode(){
 }
 
 /*
-Fonction pour permettre de mettre à jour le palette de couleur sélectionnée
+Fonction pour permettre de mettre à jour la palette de couleur sélectionnée
 */
 function majPaletteCouleur(){
   var i = choixPaletteCouleur.value;
-  colors = colorPalettes[i].couleurs;
-  couleurCerclePositif = colorPalettes[i].couleurCerclePositif;
-  couleurCercleNegatif = colorPalettes[i].couleurCercleNegatif;
+  couleurs = listePalettesCouleur[i].couleurs;
+  couleurCerclePositif = listePalettesCouleur[i].couleurCerclePositif;
+  couleurCercleNegatif = listePalettesCouleur[i].couleurCercleNegatif;
 }
 
 /*
@@ -325,7 +326,7 @@ function majNombreClasses(){
 }
 
 /*
-Fonction permettant de choisir telle ou telle échelle (Région, département, commune)
+Fonction permettant de choisir telle ou telle échelle (Région, département, epci, commune)
 */
 function majEchelle() {
   //Mise à jour de l'échelle affichée
@@ -333,7 +334,7 @@ function majEchelle() {
 }
 
 /*
-Fonction permettant de changer d'échelle (région, département, commune) seulement
+Fonction permettant de changer d'échelle (région, département, epci, commune) seulement
 lorsque l'utilisateur change et non lorsqu'il clique une nouvelle fois sur la
 même échelle.
 */
@@ -390,11 +391,13 @@ Fonction qui s'effectuera au chargement de la page pour afficher les données
 liées au TopoJSON
 */
 function chargerAfficherGeometriesOnLoad() {
-  var echelleGeometrieJson = menuChoixEchelle.choixEchelle.value + "s";
+  var echelleGeometrieJson = menuChoixEchelle.choixEchelle.value;
   chargerDecompresserTopoJSON(echelleGeometrieJson).then(majGeometrie);
-  // Dans le cas d'une visualisation normale, on précharge les départements et les communes
-  if (echelleGeometrieJson == "regions") {
-    chargerDecompresserTopoJSON("departements").then(chargerDecompresserTopoJSON("communes"));
+  // Dans le cas d'une visualisation normale, on précharge les départements, epci et communes
+  if (echelleGeometrieJson == "region") {
+    chargerDecompresserTopoJSON("departement")
+    .then(chargerDecompresserTopoJSON("epci"))
+    .then(chargerDecompresserTopoJSON("commune"));
   }
 }
 
@@ -425,12 +428,12 @@ function ajouterGeojsonLayers() {
   }
 
   //Ajout des différents objets sur les cartes
-  layerMetropole = L.geoJSON(places,{style: style, onEachFeature: onEachFeature}).addTo(mapFranceMetropolitaine);
-  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureGuadeloupe}).addTo(mapGuadeloupe);
-  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMartinique}).addTo(mapMartinique);
-  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureGuyane}).addTo(mapGuyane);
-  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureReunion}).addTo(mapReunion);
-  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: onEachFeatureMayotte}).addTo(mapMayotte);
+  layerMetropole = L.geoJSON(places,{style: style, onEachFeature: evenementsGeometriesFranceMetropolitaine}).addTo(mapFranceMetropolitaine);
+  layerGuadeloupe = L.geoJSON(placesDROM,{style: style, onEachFeature: evenementsGeometriesGuadeloupe}).addTo(mapGuadeloupe);
+  layerMartinique = L.geoJSON(placesDROM,{style: style, onEachFeature: evenementsGeometriesMartinique}).addTo(mapMartinique);
+  layerGuyane = L.geoJSON(placesDROM,{style: style, onEachFeature: evenementsGeometriesGuyane}).addTo(mapGuyane);
+  layerReunion = L.geoJSON(placesDROM,{style: style, onEachFeature: evenementsGeometriesReunion}).addTo(mapReunion);
+  layerMayotte = L.geoJSON(placesDROM,{style: style, onEachFeature: evenementsGeometriesMayotte}).addTo(mapMayotte);
 
   if (choixMode.value == "cerclesProportionnels" && statExiste){
     layerCercle.addTo(mapFranceMetropolitaine);
@@ -446,6 +449,8 @@ function ajouterGeojsonLayers() {
     layerReunion.bringToFront();
     layerMayotte.bringToFront();
   }
+  // Fin du chargement
+  mapFranceMetropolitaine.spin(false);
 }
 
 
@@ -483,8 +488,9 @@ Fonction pour créer une liste de fichiers stats disponibles
 */
 function obtenirListeFichiersStat(){
   //Interroge un fichier php pour obtenir la liste des fichiers du dossier stats
-  // var promesse = d3.text("./fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
-  var promesse = d3.text("./fichiers_php/liste_fichiers_stats.txt").then(function(listeFichiers){
+  // /!\ Attention, quand php est disponible, décommenter la ligne ci-dessous et commenter la suivante /!\
+  // var promesse = d3.text("../fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
+  var promesse = d3.text("../fichiers_php/liste_fichiers_stats.txt").then(function(listeFichiers){
     //Liste des fichiers de statistique sous forme de liste
     listeFichiers = listeFichiers.split(";") ;
     var majListeFichiers = [];
@@ -516,7 +522,7 @@ function remplirListeStats(){
     // Sous-fonction pour lire chacun des fichiers stats de la liste pour récupérer leur titre
     function lireFichiersStatDeListe(i = 0){
       //Lecture du titre de la statistique associée au fichier
-      var nouvellePromesse = d3.json("./fichiers_stats/" + listeFichiers[i]).then(function(stats) {
+      var nouvellePromesse = d3.json("../fichiers_stats/" + listeFichiers[i]).then(function(stats) {
         var titreStat = stats.metadata.stat_name;
         //Cas où la statistique n'existe pas
         if (!listeStats.includes(titreStat)){
@@ -552,7 +558,7 @@ function obtenirCheminFichierJsonStats(){
     var nomFichierStatsJson = choixStat.value;
     nomFichierStatsJson += "_" + menuChoixEchelle.choixEchelle.value + ".json";
     if (listeFichiersJson.includes(nomFichierStatsJson)) {
-      statsJson = "./fichiers_stats/" + nomFichierStatsJson;
+      statsJson = "../fichiers_stats/" + nomFichierStatsJson;
     }
   }
   return statsJson;
@@ -649,45 +655,45 @@ function obtenirCouleur(d) {
     return '#AAAAAA'; //Couleur grise
   }
 
-  for (var i = 0; i < grades.length-1; i++) {
+  for (let i = 0; i < grades.length-1; i++) {
     if (d >= grades[i] && d < grades[i+1]){
-      return colors[i];
+      return couleurs[i];
     }
   }
-  return colors[colors.length-1];
+  return couleurs[couleurs.length-1];
 }
 
 /*
 Fonction permettant de calculer le rayon d'un cercle proportionnel à la valeur statistique
 */
-function setCircleSize(stat,max_stat){
-  var rayon_max = 30;
-  return Math.sqrt(Math.abs(stat))*rayon_max/Math.sqrt(max_stat);
+function caculerTailleCercle(stat,maxStat){
+  var rayonMax = 30;
+  return Math.sqrt(Math.abs(stat))*rayonMax/Math.sqrt(maxStat);
 }
 
 /*
 Fonction permettant de calculer la valeur statistique à partir du rayon d'un cercle proportionnel
 */
-function obtStatCercle(rayon,max_stat){
-  var rayon_max = 30;
-  return rayon**2/rayon_max**2*max_stat;
+function obtenirStatistiqueCercle(rayonCercle,maxStat){
+  var rayonMax = 30; //Rayon maximal des cercles pouvant être affichés
+  return rayonCercle**2/rayonMax**2*maxStat;
 }
 
 /*
-Fonction permettant de récupérer le centroide d'un Feature
+Fonction permettant de récupérer le centroide d'une géométrie
 */
-function getCentroid(feature){
-  var coord = feature.geometry.coordinates;
-  var polygon = null;
+function obtenirCentroideGeometrie(feature){
+  var coordonnesGeometrie = feature.geometry.coordinates;
+  var polygoneGeometrie = null;
   if (feature.geometry.type=="MultiPolygon"){
-    polygon = turf.helpers.multiPolygon(coord);
+    polygoneGeometrie = turf.helpers.multiPolygon(coordonnesGeometrie);
   }else{
-    polygon = turf.helpers.polygon(coord);
+    polygoneGeometrie = turf.helpers.polygon(coordonnesGeometrie);
   }
-  var centro = turf.centroid(polygon).geometry.coordinates;
-  var long = parseFloat(centro[0]);
-  var lat = parseFloat(centro[1]);
-  return L.latLng(lat, long);
+  var centroideGeometrie = turf.centroid(polygoneGeometrie).geometry.coordinates;
+  var longitudeCentroide = parseFloat(centroideGeometrie[0]);
+  var latitudeCentroide = parseFloat(centroideGeometrie[1]);
+  return L.latLng(latitudeCentroide, longitudeCentroide);
 }
 
 /*
@@ -729,8 +735,8 @@ function styleCercles(color){
   //Opacité de la frontère par défaut
   var opacite = 1;
 
-  //Si la couche est la commune, la frontière devient invisible
-  if (echelleAffichee == 'commune'){
+  //Si la couche est la commune ou l'epci, la frontière devient invisible
+  if (echelleAffichee == 'commune' || echelleAffichee == 'epci'){
     opacite = 0;
   }
 
@@ -766,8 +772,8 @@ function styleCouleur(color){
   //Couleur de la Frontière par défaut
   var couleurFrontiere = 'white';
 
-  //Si la couche est la commune, la frontière prend la même couleur que le remplissage
-  if (echelleAffichee == 'commune'){
+  //Si la couche est la commune ou l'epci, la frontière prend la même couleur que le remplissage
+  if (echelleAffichee == 'commune' || echelleAffichee == 'epci'){
     couleurFrontiere = color;
   }
 
@@ -784,7 +790,7 @@ function styleCouleur(color){
 /*
 Surbrillance de la carte
 */
-function highlightFeature(e) {
+function survolGeometrie(e) {
   var layer = e.target;
 
   if (choixMode.value == "cerclesProportionnels"){
@@ -815,7 +821,7 @@ function highlightFeature(e) {
 /*
 Fonction permettant de remettre l'objet à l'état initial lorsqu'on ne le survole plus
 */
-function resetHighlight(e) {
+function nonSurvolGeometrie(e) {
   layerMetropole.resetStyle(e.target);
   layerGuadeloupe.resetStyle(e.target);
   layerMartinique.resetStyle(e.target);
@@ -826,12 +832,14 @@ function resetHighlight(e) {
 }
 
 /*
-Fonction gérant les événements liés à la carte (mouseout, mouseover...)
+Fonction gérant les événements des géométries (mouseout, mouseover...)
+Elle crée les cercles proportionnels s'il le faut
 */
-function onEachFeatureCercle(feature, layer, layerCercle) {
+function evenementsGeometrieEtCreerCercle(feature, layer, layerCercle) {
+  //Définition du style des géométries en fonction des événements
   layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
+    mouseover: survolGeometrie,
+    mouseout: nonSurvolGeometrie,
   });
   if (choixMode.value == "cerclesProportionnels"){
     creerCercle(feature, layer, layerCercle);
@@ -841,28 +849,28 @@ function onEachFeatureCercle(feature, layer, layerCercle) {
 /*
 Fonctions enrobant la fonction gérant les événements liés à la carte (mouseout, mouseover...)
 */
-function onEachFeature(feature, layer) {
-  onEachFeatureCercle(feature, layer, layerCercle);
+function evenementsGeometriesFranceMetropolitaine(feature, layer) {
+  evenementsGeometrieEtCreerCercle(feature, layer, layerCercle);
 }
 
-function onEachFeatureMartinique(feature, layer) {
-  onEachFeatureCercle(feature, layer, layerCercleMartinique);
+function evenementsGeometriesMartinique(feature, layer) {
+  evenementsGeometrieEtCreerCercle(feature, layer, layerCercleMartinique);
 }
 
-function onEachFeatureGuadeloupe(feature, layer) {
-  onEachFeatureCercle(feature, layer, layerCercleGuadeloupe);
+function evenementsGeometriesGuadeloupe(feature, layer) {
+  evenementsGeometrieEtCreerCercle(feature, layer, layerCercleGuadeloupe);
 }
 
-function onEachFeatureGuyane(feature, layer) {
-  onEachFeatureCercle(feature, layer, layerCercleGuyane);
+function evenementsGeometriesGuyane(feature, layer) {
+  evenementsGeometrieEtCreerCercle(feature, layer, layerCercleGuyane);
 }
 
-function onEachFeatureReunion(feature, layer) {
-  onEachFeatureCercle(feature, layer, layerCercleReunion);
+function evenementsGeometriesReunion(feature, layer) {
+  evenementsGeometrieEtCreerCercle(feature, layer, layerCercleReunion);
 }
 
-function onEachFeatureMayotte(feature, layer) {
-  onEachFeatureCercle(feature, layer, layerCercleMayotte);
+function evenementsGeometriesMayotte(feature, layer) {
+  evenementsGeometrieEtCreerCercle(feature, layer, layerCercleMayotte);
 }
 
 /*
@@ -870,7 +878,7 @@ Fonction créant un cercle proportionnel dans layerCercle
 */
 function creerCercle(feature, layer, layerC){
   var stat = feature.properties["stats"];
-  var centroid = getCentroid(feature);
+  var centroid = obtenirCentroideGeometrie(feature);
   if (stat != undefined){
     //Définition de la couleur du cercle en fonction de sa valeur
     var couleurCercle = '#000000';
@@ -881,7 +889,7 @@ function creerCercle(feature, layer, layerC){
       couleurCercle = couleurCercleNegatif;
     }
     var marqueurCercle = L.circleMarker(centroid, {
-      radius: setCircleSize(stat, maxAbsoluStats),
+      radius: caculerTailleCercle(stat, maxAbsoluStats),
       weight: 0.1,
       color: '#000000',
       opacity: 1.0,
@@ -1010,9 +1018,9 @@ function remplirLegendeCercle(div){
   var ligne1 = "<line x1='35' y1='50' x2='75' y2='50' stroke='black' stroke-dasharray='3, 2' />";
 
   //Ajout des textes, le nombre affiché a une précision décimale de 1
-  var text3 = "<text id='text3' x='75' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle3,maxAbsoluStats),1)) + "</text>";
-  var text2 = "<text id='text2' x='75' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle2,maxAbsoluStats),1)) + "</text>";
-  var text1 = "<text id='text1' x='75' y='53.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtStatCercle(rayonCercle1,maxAbsoluStats),1)) + "</text>";
+  var text3 = "<text id='text3' x='75' y='13.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtenirStatistiqueCercle(rayonCercle3,maxAbsoluStats),1)) + "</text>";
+  var text2 = "<text id='text2' x='75' y='33.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtenirStatistiqueCercle(rayonCercle2,maxAbsoluStats),1)) + "</text>";
+  var text1 = "<text id='text1' x='75' y='53.5' fill='black'>"+ ecritureNumeriqueFrancaise(precisionDecimale(obtenirStatistiqueCercle(rayonCercle1,maxAbsoluStats),1)) + "</text>";
 
   legendeCercle += cercle3 + cercle2 + cercle1 + ligne1 + ligne2 + ligne3 + text1 + text2 + text3 + unite + legendePositif + legendeNegatif;
 
@@ -1161,8 +1169,8 @@ Fonction permettant de faire la liste des palettes de couleurs disponibles dans 
 function remplirChoixPaletteCouleur(){
   choixPaletteCouleur.innerHTML = "";
 
-  for (var i=0;i<Object.keys(colorPalettes).length;i++){
-    choixPaletteCouleur.innerHTML += "<option value =" + i +">" + colorPalettes[i].nom + "</option>\n"
+  for (var i=0;i<Object.keys(listePalettesCouleur).length;i++){
+    choixPaletteCouleur.innerHTML += "<option value =" + i +">" + listePalettesCouleur[i].nom + "</option>\n"
   }
 }
 
@@ -1196,8 +1204,7 @@ function exporterImage(format) {
     console.error('Une erreur est survenue !', error);
   });
 }
-document.getElementById('exportPng').addEventListener('click', function(e) {exporterImage('png')});
-document.getElementById('exportSvg').addEventListener('click', function(e) {exporterImage('svg')});
+
 
 /*
 Fonction permettant de sauvegarder la config de la carte
@@ -1208,20 +1215,19 @@ function sauverConfig() {
   confJson.mode = choixMode.value;
   confJson.paletteCouleur = choixPaletteCouleur.value;
   confJson.nombreClasses = nombreClasses.value;
-  confJson.fichierStat = obtenirCheminFichierJsonStats();
+  confJson.fichierStat = "." + obtenirCheminFichierJsonStats();
   //Sauvegarder dans un fichier
-  d3.text("fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
+  d3.text("../fichiers_php/sauve_conf.php?json=" + JSON.stringify(confJson)).then(function(reponse) {
     //TODO: mieux gérer la réponse si erreur
     console.log(reponse);
   });
 }
-document.getElementById('exportJson').addEventListener('click',sauverConfig);
 
 /*
 Fonction permettant de charger une config
 */
 function chargerConfig() {
-  var promesse = d3.json("config.json").then(function(confJson) {
+  var promesse = d3.json("./config.json").then(function(confJson) {
     //Si la config est renseignée
     if ('echelle' in confJson) {
       var echelle = document.getElementById(confJson.echelle);
@@ -1275,6 +1281,10 @@ choixMode.addEventListener('change',majGeometrie);
 choixPaletteCouleur.addEventListener('change',majGeometrie);
 nombreClasses.addEventListener('change',majGeometrie);
 choixStat.addEventListener('change',majGeometrie);
+document.getElementById('exportPng').addEventListener('click', function(e) {exporterImage('png')});
+document.getElementById('exportSvg').addEventListener('click', function(e) {exporterImage('svg')});
+document.getElementById('exportJson').addEventListener('click',sauverConfig);
+
 
 /*------------------------------Fonctions extras------------------------------*/
 
