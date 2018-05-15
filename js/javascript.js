@@ -488,6 +488,7 @@ Fonction pour créer une liste de fichiers stats disponibles
 */
 function obtenirListeFichiersStat(){
   //Interroge un fichier php pour obtenir la liste des fichiers du dossier stats
+  // /!\ Attention, quand php est disponible, décommenter la ligne ci-dessous et commenter la suivante /!\
   // var promesse = d3.text("./fichiers_php/liste_fichiers_stats.php").then(function(listeFichiers){
   var promesse = d3.text("./fichiers_php/liste_fichiers_stats.txt").then(function(listeFichiers){
     //Liste des fichiers de statistique sous forme de liste
