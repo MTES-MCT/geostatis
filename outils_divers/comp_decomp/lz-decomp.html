@@ -5,7 +5,7 @@
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
     <script src="https://d3js.org/d3-fetch.v1.min.js"></script>
-    <script src="../js/lz-string.min.js"></script>
+    <script src="../../js/lz-string.min.js"></script>
   </head>
   <body>
     <a download="info.txt" id="downloadlink" style="display: none">Download</a>
@@ -26,11 +26,11 @@
         return textFile;
       };
 
-      var jsondir = "../fonds_carte/";
+      var jsondir = "../../fonds_carte/";
       var filename = "epci.json";
       d3.text(jsondir + filename + ".txt").then(function(data) {
         console.log("Size of compressed sample is: " + data.length);
-        var decompressed = LZString.decompressFromUTF16(data); 
+        var decompressed = LZString.decompressFromUTF16(data);
         console.log("Sample length is: " + decompressed.length);
 
         var link = document.getElementById('downloadlink');

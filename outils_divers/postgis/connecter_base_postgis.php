@@ -1,15 +1,11 @@
 <?php
 
-// $xmin = 4.5;
-// $ymin = 46.5;
-// $xmax = 5.0;
-// $ymax = 47.0;
-
 //Récupération des limites de la bbox
 $xmin = $_POST["xmin"];
 $ymin = $_POST["ymin"];
 $xmax = $_POST["xmax"];
 $ymax = $_POST["ymax"];
+$table = $_POST["couche"];
 
 $nomBDD = "postgres"; //Nom de la base de données
 $hote = "localhost"; //Nom de l'hôte
@@ -29,7 +25,7 @@ if (!$conn) {
 $bbox = "ST_MakeEnvelope($xmin, $ymin, $xmax, $ymax)";
 
 //Requête pour sélectionner les communes situées dans la bbox
-$requete = "SELECT code_insee, nom, ST_ASGeoJSON(geom) FROM communes WHERE ST_Intersects(geom,%s)";
+$requete = "SELECT code_insee, nom, ST_ASGeoJSON(geom) FROM $table WHERE ST_Intersects(geom,%s)";
 
 //%s est remplacé par le chaine définie par $bbox
 $requete = sprintf($requete, $bbox);
