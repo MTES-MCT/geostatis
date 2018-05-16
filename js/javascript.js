@@ -214,8 +214,8 @@ var miniMap; //Variable liée à la mini-map
 var miniMapAffichee = false; //Indique si la mini-map est affichée ou non
 var statExiste = false;
 
-var listePalettesCouleur = {"0":{"nom":"Classique","couleurs":['#FFEDCD','#FFEDA0','#FED976','#FEB24C','#FD8D3C','#FC4E2A','#E31A1C','#BD0026','#800026','#799026','#570026'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurs":['#0000FF','#0000EE','#0000DD','#0000CC','#0000BB','#0000AA','#000099','#000088','#000077','#000066','#000055'],"couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurs":['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00','#00AA00','#009900','#008800','#007700','#006600','#005500'],"couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurs":['#FF0000','#EE0000','#DD0000','#CC0000','#BB0000','#AA0000','#990000','#880000','#770000','#660000','#550000'],"couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
-
+var listePalettesCouleur = {"0":{"nom":"Classique","couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"1":{"nom":"Bleus","couleurCerclePositif":'#0000FF',"couleurCercleNegatif":'#000055'},"2":{"nom":"Verts","couleurCerclePositif":'#00FF00',"couleurCercleNegatif":'#FF0000'},"3":{"nom":"Rouges","couleurCerclePositif":'#FF0000',"couleurCercleNegatif":'#00FF00'}}
+var paletteCouleur = d3.scaleThreshold();
 
 /*--------------Gestion des mises à jour géométrie et stats-------------------*/
 
@@ -305,9 +305,25 @@ Fonction pour permettre de mettre à jour la palette de couleur sélectionnée
 */
 function majPaletteCouleur(){
   var i = choixPaletteCouleur.value;
-  couleurs = listePalettesCouleur[i].couleurs;
   couleurCerclePositif = listePalettesCouleur[i].couleurCerclePositif;
   couleurCercleNegatif = listePalettesCouleur[i].couleurCercleNegatif;
+
+  var tempNombreClasses = parseInt(nombreClasses.value);
+  switch(listePalettesCouleur[i].nom) {
+    case 'Classique':
+      couleurs = d3.schemeYlOrRd[tempNombreClasses];
+      break;
+    case 'Rouges':
+      couleurs = d3.schemeReds[tempNombreClasses];
+      break;
+    case 'Bleus':
+      couleurs = d3.schemeBlues[tempNombreClasses];
+      break;
+    case 'Verts':
+      couleurs = d3.schemeGreens[tempNombreClasses];
+      break;
+  }
+  paletteCouleur.range(couleurs);
 }
 
 /*
@@ -621,6 +637,7 @@ function obtenirBornes(){
     var valeurNombreClasses = nombreClasses.value;
     switch(choixMode.value) {
       case 'intervallesEgaux':
+        //On n'a pas besoin du maximum dans grades, donc on ignore le dernier élément
         grades = geostatsObject.getClassEqInterval(valeurNombreClasses).slice(0, -1);
         break;
       case 'effectifsEgaux':
@@ -637,25 +654,20 @@ function obtenirBornes(){
         break;
     }
   }
+  //On garde le minimum dans grades pour la légende, on l'enlève pour la liste de seuils
+  paletteCouleur.domain(grades.slice(1));
 }
 
 /*
-Fonction permettant d'obtenir la couleur d'un polygone
-en fonction d'une échelle de valeurs et de couleurs
- */
+Fonction permettant d'obtenir la couleur d'un polygone en fonction d'une échelle de valeurs et de couleurs
+*/
 function obtenirCouleur(d) {
 
   //Cas où d n'est pas un nombre
   if (isNaN(d)){
     return '#AAAAAA'; //Couleur grise
   }
-
-  for (let i = 0; i < grades.length-1; i++) {
-    if (d >= grades[i] && d < grades[i+1]){
-      return couleurs[i];
-    }
-  }
-  return couleurs[couleurs.length-1];
+  return paletteCouleur(d); //Couleur selon l'échelle
 }
 
 /*
